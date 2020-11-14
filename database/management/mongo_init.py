@@ -36,11 +36,12 @@ try:
     userdb = client["user-db"]
     users = userdb["users"]
 
-    # Create init-user
+    # Create admin-user
     if not users.find_one():
+
         init_user = {"ID": 0,
-                     "name": "init",
-                     "password": "",
+                     "name": "admin",
+                     "password": "admin",   # ToDo: Change xD
                      "symmetricKey": "",
                      "privateKey-PSS": "",
                      "publicKey-PSS": "",

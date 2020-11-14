@@ -2,29 +2,37 @@
 
 # import the MongoClient class
 from pymongo import MongoClient, errors
+from environs import Env
 
 
 class MongoManagement:
 
     def __init__(self):
 
-        self.db_name = "database"
-        self.db_host = "localhost"
-        self.db_port = 27017
-        self.db_user = "user"
-        self.db_password = "pass"
+        # Read from .env
+        env = Env()
+        env.read_env()
 
-        # ToDo: Replace with .env variables!
+        self.db_name = str(env("DATABASE_NAME"))
+        self.db_host = str(env("DATABASE_HOST"))
+        self.db_port = int(env("DATABASE_PORT"))
+        self.db_user = str(env("DATABASE_USER"))
+        self.db_pass = str(env("DATABASE_PASSWORD"))
 
-        self.client = MongoClient(
-            host = [ self.db_host + ":" + str(self.db_port) ],
-            serverSelectionTimeoutMS = 3000, # 3 second timeout
-            username = self.db_user,
-            password = self.db_password,
-        )
-        print("Connected!")
-        self.userdb = self.client["user-db"]
-        self.users = self.userdb["users"]
+        try:
+            self.client = MongoClient(
+                host = [ str(self.db_host) + ":" + str(self.db_port) ],
+                serverSelectionTimeoutMS = 3000, # 3 second timeout
+                username = self.db_user,
+                password = self.db_pass,
+            )
+            print("Connected!")
+            self.userdb = self.client["user-db"]
+            self.users = self.userdb["users"]
+
+        except Exception as e:
+            raise e
+
 
     def add_user(self, user):
         """
@@ -52,6 +60,7 @@ class MongoManagement:
         :param attribute: attribute dictionary
         :return:
         """
+
         pass
 
     def return_user(self, user_id):
@@ -69,27 +78,3 @@ class MongoManagement:
         """
         x = self.users.delete_many({})
 
-
-if __name__ == "__main__":
-
-    from random import randint
-
-    man = MongoManagement()
-    user_id = randint(1, 10000000000000)
-    new_user = {"ID": user_id,
-                "name": "init",
-                "password": "kjldasfhklasdjfh",
-                "symmetricKey": "dfdfdfdf",
-                "privateKey-PSS": "dfdsfadsfa",
-                "publicKey-PSS": "adsfasdf",
-                "privateKey-OAEP": "asdfasdfasdf",
-                "publicKey-OAEP": "asdfadsfas",
-                "encryptedFilePath": "/test/test/test"
-                }
-    _id = man.add_user(new_user)
-    print("_id: " + str(_id))
-    user = man.return_user(user_id)
-    print(user)
-    man.delete_user(user_id)
-    user = man.return_user(user_id)
-    print(user)
