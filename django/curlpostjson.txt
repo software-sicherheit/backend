@@ -1,0 +1,1 @@
+curl --header Content-Tpye:application/json --request POST --data '{"ID": 1,"name": "admin","password": "admin","symmetricKey": "","privateKey-PSS": "","publicKey-PSS": "","privateKey-OAEP": "","publicKey-OAEP": "","encryptedFilePath": ""}' http://127.0.0.1:8000/users/

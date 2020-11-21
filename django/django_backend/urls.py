@@ -20,5 +20,7 @@ from . import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('documents/', views.edit_documents),
-    path('documents/<document_id>', views.edit_documents)
+    path('documents/<document_id>', views.edit_documents),
+    path('users/', views.create_user),
+    path('users/<document_id>', views.create_user)
 ]
