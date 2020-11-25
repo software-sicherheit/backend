@@ -16,7 +16,9 @@ def create_user(request):
     """
     if request.method == 'GET':
         return HttpResponse(400)
+
     elif request.method == 'POST':
+
         try:
             data = json.loads(request.body)
 
@@ -29,6 +31,8 @@ def create_user(request):
 
             # Check if any uuids are available
             if not available_uuids:
+
+                # Return server error if no further user can be created
                 return HttpResponse(500)
 
             # Take random uuid
@@ -74,12 +78,19 @@ def create_user(request):
 
 @csrf_exempt
 def get_user(request, username=''):
+    """
+    Takes username and returns corresponding database entry
+    :param request:
+    :param username:
+    :return:
+    """
     if username == '':
         return HttpResponse(400)
     if request.method == 'POST':
         return HttpResponse(400)
     elif request.method == 'GET':
         try:
+            # Search for db entry with username
             data = User.objects.filter(username__contains=username).values()
             return HttpResponse(data)
 
@@ -92,6 +103,11 @@ def get_user(request, username=''):
 
 @csrf_exempt
 def change_password(request):
+    """
+    Takes a POST request and updates db entry with given uuid
+    :param request:
+    :return:
+    """
     if request.method == 'GET':
         return HttpResponse(400)
     elif request.method == 'POST':
@@ -126,6 +142,7 @@ def change_password(request):
             
             '''
 
+            # Force update, don't create new entry
             upd_user.save(force_update=True)
             return HttpResponse(200)
 

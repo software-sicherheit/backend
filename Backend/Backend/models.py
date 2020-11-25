@@ -15,11 +15,6 @@ class User(models.Model):
 
     objects = models.DjongoManager()
 
-    class Meta():
-
-        unique_together = [['uuid', 'password_hash']]
-
-
 
 
 
