@@ -1,10 +1,15 @@
 from minio import Minio
 from minio.error import ResponseError, BucketAlreadyExists
 import os
+from environs import Env
+
 
 class MinioManagement:
 
     def __init__(self, access, secret):
+
+        # Read from .env?
+        self.bucket_name = "s3storage-e2e-cloud-storage"
 
         try:
             self.client = Minio(
@@ -17,30 +22,38 @@ class MinioManagement:
         except Exception as e:
             raise e
 
+    # also creates a new one if there isn't one at the moment when an object is put in
+    def switch_active_bucket(self, bucket_name):
+        self.bucket_name = bucket_name
+
     #   user_id=bucket_name=user_name(?), file_id=file_name->stored in MonogDB
-    def put_object(self, user_id, file_id, file_path):
-        if not self.client.bucket_exists(user_id):
+    # The uuid is the beginning of the filename uuid/file
+    def put_object(self, uuid, file_name, byte_data_blob, size_of_data):
+        if not self.client.bucket_exists(self.bucket_name):
             try:
-                self.client.make_bucket(user_id)
+                self.client.make_bucket(self.bucket_name)
             except ResponseError as identifier:
                 raise
         try:
-            with open(file_path, 'rb') as user_file:
-                statdata = os.stat('/tmp/test.txt')
+#            with open(file_path, 'rb') as user_file:
+#                statdata = os.stat('/tmp/test.txt')
+
+                filename = str(uuid) + '/' + str(file_name)
+
                 self.client.put_object(
-                    user_id,
-                    file_id,
-                    user_file,
-                    statdata.st_size
+                    self.bucket_name,
+                    file_name,
+                    byte_data_blob,
+                    size_of_data
                 )
         except ResponseError as identifier:
             raise
 
 # Generates a string list and returns it, mainly for  remove_files
-    def generate_object_list(self, bucket_name):
-        if self.client.bucket_exists(bucket_name):
+    def generate_object_list(self, uuid):
+        if self.client.bucket_exists(self.bucket_name):
             try:
-                objects = self.client.list_objects(bucket_name)
+                objects = self.client.list_objects(self.bucket_name)
                 object_list = [x.object_name for x in objects]
                 return object_list
             except ResponseError as identifier:
@@ -81,7 +94,7 @@ class MinioManagement:
             except ResponseError as identifier:
                 raise
 
-# Empties bucket and deletes it
+# Empties bucket and deletes it !!Erases whole database!!
     def purge_bucket(self, bucket_name):
         if self.client.bucket_exists(bucket_name):
             try:
@@ -89,6 +102,9 @@ class MinioManagement:
                 self.remove_empty_bucket(bucket_name)
             except ResponseError as identifier:
                 raise
+        pass
+
+    def purge_user(self, uuid):
         pass
 
 #if __name__ == '__main__':

@@ -1,72 +1,40 @@
 from django.http import HttpResponse
+
 import os
 import sys
-#import requests
-#from rest_framework import status
-#from pymongo import MongoClient
 import json
-from database.management import mongo_management as mm
+sys.path.append(os.getcwd())
+from database.management import mongo_management as mon
+from minio_src import minio_management as min
 
-DATABASE_NAME='database'
-DATABASE_HOST='localhost'
-DATABASE_PORT=27017
-DATABASE_USER='user'
-DATABASE_PASSWORD='pass'
-REGIONS_COLLECTION ='test'
 
+mongoClient = mon.MongoManagement()
+minioClient = min.MinioManagement("accesskey", "secretkey")
 
 '''
 dependencies needed on server: pymongo, environs
 django forbids relative imports above top level
 another relative imports problem: our pwd in docker will be changed to "/code"
+if we want to use multiple buckets in minio ne need to store the bucket_id in the mongo_database
 '''
 # print("Working Dir: ")
 # print(os.getcwd())
-'''
-def database():
-    MongoManagement client;
-    client = MongoClient(host=DATABASE_HOST,
-                            port=int(DATABASE_PORT),
-                            username=DATABASE_USER,
-                            password=DATABASE_PASSWORD
-                            )
-    userdb = client["user-db"]
-    users = userdb["users"]
-    print('ok')
-    return users
-'''
-def edit_documents (request, document_id=None):
-        mongoClient = mm.MongoManagement()
-        id = document_id
-        if request.method == 'POST':
-            init_user = {"ID": 0,
-                         "name": "admin",
-                         "password": "admin",
-                         "symmetricKey": "",
-                         "privateKey-PSS": "",
-                         "publicKey-PSS": "",
-                         "privateKey-OAEP": "",
-                         "publicKey-OAEP": "",
-                         "encryptedFilePath": ""}
-            mongoClient.add_user(init_user)
-            return HttpResponse(id)
-        elif request.method == 'GET':
-            print("Are we there yet?")
-
-            #if(id == 1):
-            print("Jepsindda")
-            for i in range(10):
-                print(mongoClient.return_user(i))
-            return HttpResponse(mongoClient.return_user(1))
-
 
 # users/ & users/{id}
-def create_user(request, document_id=None):
-    mongoClient = mm.MongoManagement()
-    id = document_id
-    if request.method == 'GET':
-        return HttpResponse(mongoClient.return_user(id))
+def edit_users(request, user_id=None):
+    id = user_id
+    if request.method == 'GET': # return by name aswell?
+        id = int(user_id)
+        #print(type(id))
+        HttpResponse( mongoClient.return_name(id) )
     elif request.method == 'POST':
+        # Send users like this:
+        # Don't forget to specifiy the Content-Type
+        # curl --header Content-Tpye:application/json
+        #      --request POST --data '{"ID": 1,"name": "admin","password": "admin",
+        #      "symmetricKey": "","privateKey-PSS": "","publicKey-PSS": "",
+        #      "privateKey-OAEP": "","publicKey-OAEP": "","encryptedFilePath": ""}'
+        #      http://127.0.0.1:8000/users/
         data = request.body.decode('UTF-8')
         print(data)
         jsondata = json.loads(data)
@@ -74,3 +42,56 @@ def create_user(request, document_id=None):
         print(jsondata['name'])
         mongoClient.add_user(jsondata)
         return HttpResponse(1)
+    elif request.method == 'PUT':
+        pass
+    elif request.method == 'DELETE':
+        id = int(id)
+        mongoClient.delete_user(id)
+        # Deletes all files of user aswell | need to create mini put first to define pathstructure
+        minioClient.purge_user(id)
+        pass
+
+def edit_documents (request, document_id=None):
+        id = document_id
+        if request.method == 'GET':
+            id = int(id)
+            # takes uuid and creates a list including all files that beginn with uuid/
+            minioClient.generate_object_list(id)
+            #print(mongoClient.return_user(id)) #return user, get name,
+            #return HttpResponse(mongoClient.return_user(id))
+        elif request.method == 'POST':
+            #For processing conventional form data, use HttpRequest.POST
+            binary_data = request.body
+            #print ("Testing Posts!")
+            #print ( request.get_host() )
+            #data = request.body.decode('UTF-8')
+            #print(data)
+            #jsondata = json.loads(data)
+            #print("name: ")
+            #print(jsondata['name'])
+
+            print("Post: request.POST & request.FILES: ")
+            print (request.POST)
+            print (request.FILES)
+
+            #Post: request.POST & request.FILES:                                     │
+            #< QueryDict: {} >                                                         │
+            #< MultiValueDict: {'fileupload': [ < InMemoryUploadedFile: fileForTestUploa│
+            #d.txt(text / plain) >]} >
+
+            #^ todo: wrap into right dataformat and pass onto miniClient.put_object
+
+#            form = DocumentForm(request.POST, request.FILES)
+#            if form.is_valid():
+#                newdoc = Document(docfile=request.FILES['docfile'])
+
+            # - Start here! - this needs work
+            # todo: handle document/id handeling, string vs char vs int etc.
+            minioClient.put_object(id,'formFileD', binary_data, sys.getsizeof(binary_data))
+            #mongoClient.add_user(jsondata)
+            return HttpResponse(id)
+        elif request.method == 'PUT':
+            pass
+        elif request.method == 'DELETE':
+            pass
+

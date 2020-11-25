@@ -68,7 +68,18 @@ class MongoManagement:
         :param user_id: ID
         :return: database entry of user with ID = user_id
         """
+        print("Willkommen in return_user")
+        print( self.users.find_one({"ID": user_id}))
+
         return self.users.find_one({"ID": user_id})
+
+    def return_user_by_name(self, user_name):
+        """
+        Returns user credentials
+        :param user_id: ID
+        :return: database entry of user with ID = user_id
+        """
+        return self.users.find_one({"name": user_name})
 
     def delete_all_users(self):
         """
