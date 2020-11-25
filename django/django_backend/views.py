@@ -58,11 +58,12 @@ def edit_documents (request, document_id=None):
         id = document_id
         if request.method == 'GET':
             if (id != None ):
-                id = int(id)
-            # takes uuid and creates a list including all files that beginn with uuid/
-            minioClient.generate_object_list(id)
-            #print(mongoClient.return_user(id)) #return user, get name,
-            return HttpResponse(200) #mongoClient.return_user(id))
+                id = int(id) # takes uuid and creates a list including all files that beginn with uuid/
+                print("Minio generate object list: ")
+                print(minioClient.generate_object_list(id))
+                return HttpResponse( minioClient.generate_object_list(id) )
+            else: #print(mongoClient.return_user(id)) #return user, get name,
+                return HttpResponse(200) #mongoClient.return_user(id))
         elif request.method == 'POST':
             #For processing conventional form data, use HttpRequest.POST
             binary_data = request.body
