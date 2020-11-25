@@ -91,15 +91,6 @@ DATABASES = {
 }
 
 
-
-'''
-DATABASE_NAME=database
-DATABASE_HOST=localhost
-DATABASE_PORT=27017
-DATABASE_USER=user
-DATABASE_PASSWORD=pass
-'''
-
 # Password validation
 # https://docs.djangoproject.com/en/3.0/ref/settings/#auth-password-validators
 
