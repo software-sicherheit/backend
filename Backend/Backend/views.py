@@ -9,11 +9,15 @@ import json
 
 @csrf_exempt
 def create_user(request):
+    """
+    Takes a POST request and creates a new user entry in the database
+    :param request:
+    :return:
+    """
     if request.method == 'GET':
         return HttpResponse(400)
     elif request.method == 'POST':
         try:
-            # Create new user
             data = json.loads(request.body)
 
             # Get all existing uuids
@@ -29,11 +33,6 @@ def create_user(request):
 
             # Take random uuid
             random_uuid = choice(available_uuids)
-
-            print(uuid_list)
-            print(random_uuid)
-
-            random_uuid = randint(2, 9999)
 
             new_user = User(uuid=random_uuid,
                             creation_time=datetime.date.today(),
