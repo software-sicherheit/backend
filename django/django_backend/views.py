@@ -24,9 +24,12 @@ if we want to use multiple buckets in minio ne need to store the bucket_id in th
 def edit_users(request, user_id=None):
     id = user_id
     if request.method == 'GET': # return by name aswell?
-        id = int(user_id)
-        #print(type(id))
-        HttpResponse( mongoClient.return_name(id) )
+        if (id != None):
+            id = int(id)
+            #print(type(id))
+            return HttpResponse( mongoClient.return_user(id) )
+        else:
+            return HttpResponse( 200 )
     elif request.method == 'POST':
         # Send users like this:
         # Don't forget to specifiy the Content-Type
@@ -54,11 +57,12 @@ def edit_users(request, user_id=None):
 def edit_documents (request, document_id=None):
         id = document_id
         if request.method == 'GET':
-            id = int(id)
+            if (id != None ):
+                id = int(id)
             # takes uuid and creates a list including all files that beginn with uuid/
             minioClient.generate_object_list(id)
             #print(mongoClient.return_user(id)) #return user, get name,
-            #return HttpResponse(mongoClient.return_user(id))
+            return HttpResponse(200) #mongoClient.return_user(id))
         elif request.method == 'POST':
             #For processing conventional form data, use HttpRequest.POST
             binary_data = request.body
