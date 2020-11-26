@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_backend',
 ]
 
 MIDDLEWARE = [
@@ -74,36 +75,19 @@ WSGI_APPLICATION = 'django_backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 
-'''
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
 
-DATABASES = {
-        'default': {
-            'ENGINE': 'djongo',
-            'NAME': 'user_data',
-
-            'HOST':'mongodb://user.pass@localhost:27017',
-            'USER':'user',
-            'PASSWORD':'pass',
-        },
-}
-'''
 DATABASES = {
     'default': {
         "ENGINE": "djongo",
-        "CLIENT": {
-            "host": "mongodb://user.pass@localhost:27017",
-            "username": "user",
-            "password": "pass",
-            "name": "user_data",
-        },
+        "NAME": "mongodb",
+        "HOST": "mongodb://mongodb_user:20softsich20@localhost:27017/mongodb",
+        "USER": "mongodb_user",
+        "PASSWORD": "20softsich20",
+
     }
 }
+
+
 
 
 # Password validation
