@@ -3,7 +3,6 @@ from minio.error import ResponseError, BucketAlreadyExists
 import os
 from environs import Env
 
-
 class MinioManagement:
 
     def __init__(self, access, secret):
