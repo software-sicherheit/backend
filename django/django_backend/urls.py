@@ -19,8 +19,9 @@ from . import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('documents/', views.edit_documents),
-    path('documents/<document_id>', views.edit_documents),
-    path('users/', views.edit_users),
-    path('users/<user_id>', views.edit_users)
+    path('api/v1/documents/', views.edit_documents),
+    path('api/v1/documents/<document_id>', views.edit_documents),
+    path('api/v1/documents/<user_id>/<document_id>', views.edit_documents),
+    path('api/v1/users/', views.edit_users),
+    path('api/v1/users/<user_id>', views.edit_users)
 ]

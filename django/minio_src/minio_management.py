@@ -9,7 +9,7 @@ class MinioManagement:
     def __init__(self, access, secret):
 
         # Read from .env?
-        self.bucket_name = "s3storage-e2e-cloud-storage"
+        self.bucket_name = "e2e-cloud-storage"
 
         try:
             self.client = Minio(
@@ -28,7 +28,7 @@ class MinioManagement:
 
     #   user_id=bucket_name=user_name(?), file_id=file_name->stored in MonogDB
     # The uuid is the beginning of the filename uuid/file
-    def put_object(self, uuid, file_name, byte_data_blob, size_of_data):
+    def put_object(self, uuid, file_name, blob, size_of_data):
         if not self.client.bucket_exists(self.bucket_name):
             try:
                 self.client.make_bucket(self.bucket_name)
@@ -38,31 +38,48 @@ class MinioManagement:
 #            with open(file_path, 'rb') as user_file:
 #                statdata = os.stat('/tmp/test.txt')
 
-                filename = str(uuid) + '/' + str(file_name)
-
+                con_filename = str(uuid) + '/' + str(file_name)
+                print("Shouldgivethefilenamehere: ")
+                print(con_filename)
                 self.client.put_object(
                     self.bucket_name,
-                    file_name,
-                    byte_data_blob,
+                    con_filename,
+                    blob,
                     size_of_data
                 )
         except ResponseError as identifier:
             raise
 
-# Generates a string list and returns it, mainly for  remove_files
-    def generate_object_list(self, uuid):
+# Generates a string list and returns it, no given uuid => get whole bucket
+    def generate_object_list(self, uuid=None):
         if self.client.bucket_exists(self.bucket_name):
             try:
-                objects = self.client.list_objects(self.bucket_name)
+                if uuid is None:
+                    objects = self.client.list_objects(self.bucket_name)
+                else:
+                    # p1:bucketname,p2:prefix,p3:recursive?,p4:includeversion
+                    objects = self.client.list_objects(self.bucket_name, uuid, True)
+                    #fill object_list with all objects starting with uuid
+                    #stringcompare
+                    #uuid_files_list = []
+                    #for x in object_list:
+                    #    print(x)
+                    #    if x.startswith(str(uuid)):
+                    #        print("Minio: uuid? x: ")
+                    #        print(x)
+                    #        uuid_files_list.append(x)
+                    #object_list = uuid_files_list
                 object_list = [x.object_name for x in objects]
+                print("Generated objects list: ")
+                print(object_list)
                 return object_list
             except ResponseError as identifier:
                 raise
 
 # Get file returns an object in the form of an httpResponse
-    def get_file(self, bucket_name, file_name):
+    def get_file(self, file_name):
         try:
-            response = self.client.get_object(bucket_name, file_name)
+            response = self.client.get_object(self.bucket_name, file_name)
             print(response.data.decode())
             return response
         except ResponseError as identifier:
@@ -79,10 +96,10 @@ class MinioManagement:
                 raise
 
 # Removes all objects given a list of strings and a bucket
-    def remove_files(self, bucket_name, object_list):
-        if self.client.bucket_exists(bucket_name):
+    def remove_files(self, object_list):
+        if self.client.bucket_exists(self.bucket_name):
             try:
-                for del_err in self.client.remove_objects(bucket_name, object_list):
+                for del_err in self.client.remove_objects(self.bucket_name, object_list):
                     print("Deletion Error: {}".format(del_err))
             except ResponseError as identifier:
                 raise
@@ -102,9 +119,12 @@ class MinioManagement:
                 self.remove_empty_bucket(bucket_name)
             except ResponseError as identifier:
                 raise
-        pass
 
     def purge_user(self, uuid):
+        #uuid_files_list = []
+        uuid_files_list = self.generate_object_list(uuid)
+        print(uuid_files_list)
+        self.remove_files(uuid_files_list)
         pass
 
 #if __name__ == '__main__':

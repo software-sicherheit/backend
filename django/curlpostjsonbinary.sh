@@ -1,0 +1,1 @@
+curl --header Content-Type:application/json --request POST --data '{"id":"11","filename":"robert","contentType":"file.type","size":"8","lastModifiedDate":"file.lastModifiedDate","blob":"blobdata"}' http://127.0.0.1:8000/documents/
