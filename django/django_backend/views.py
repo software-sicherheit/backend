@@ -22,10 +22,11 @@ minioClient = min.MinioManagement("accesskey", "secretkey")
 @api_view(['GET'])
 def apiOverview(request):
     api_urls = {
-        'GET, POST, DELETE': 'api/v1/documents/',
-        'GET, DELETE': 'api/v1/documents/<str:id>/',    
-        'GET, POST, DELETE': 'api/v1/users/',
-        'GET, DELETE': 'api/v1/users/<str:id>/'
+        # Without #numbers the dict confuses the 'key':'value' pairs cause of similar keys
+        '1. GET, POST, DELETE': 'api/v1/documents/',
+        '2. GET, DELETE': 'api/v1/documents/<str:id>/',
+        '3. GET, POST, DELETE': 'api/v1/users/',
+        '4. GET, DELETE': 'api/v1/users/<str:id>/',
         }
     return Response(api_urls)
 
@@ -90,9 +91,6 @@ def userDetail(request, id):
         serializer.save()
     return Response(serializer.data)
     '''
-'''
-dependencies needed on server: pymongo, environs
-'''
 
 #todo: try catching
 
