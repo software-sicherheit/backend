@@ -9,18 +9,62 @@ from database.management import mongo_management as mon
 from minio_src import minio_management as min
 from django.http import JsonResponse
 
+from rest_framework import generics, permissions, mixins, status
 from rest_framework.parsers import JSONParser 
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .serializers import DocumentSerializer, UserSerializer
-from .models import Document, User
+from rest_framework.permissions import IsAuthenticated
+from .serializers import DocumentSerializer, UserSerializer, RegisterSerializer
+from django.contrib.auth import authenticate, login
+from django.contrib.auth.models import User
+from django.conf import settings
+from .models import Document
 from bson import ObjectId
+import jwt
 
 mongoClient = mon.MongoManagement()
 minioClient = min.MinioManagement("accesskey", "secretkey")
+'''
+class RegisterView(generics.GenericAPIView):
+    serializer_class = RegisterSerializer
+    def post (self, request, *args, **kwargs): 
+        serializer = RegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status = status.HTTP_201_CREATED)
+        return Response(serializer.data, status = status.HTTP_400_BAD_REQUEST)
+'''
+class LoginView(generics.GenericAPIView):
+    serializer_class = UserSerializer
+    def post(self, request):
+        permission_classes = (IsAuthenticated,)   
+        data = request.data
+        username = data.get('username','')
+        password = data.get('password','')
+        print (username, password)
+        user = authenticate(request, username=username, password=password)
+        print (user)
+        if user:
+            print("hallo")
+            # Token wird erstellt, weitere Informationen können hinzugefügt werden
+            auth_token=jwt.encode(
+                {'username':user.username}, settings.JWT_SECRET_KEY)
+
+            serializer=UserSerializer(user)
+
+            data={
+                'user':serializer.data,
+                'token': auth_token
+            }
+            return Response(data, status=status.HTTP_200_OK)
+
+            #SEND RESPONSE
+        return Response({'detail':'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+
 
 @api_view(['GET'])
 def apiOverview(request):
+    permission_classes = (IsAuthenticated,)
     api_urls = {
         'GET, POST, DELETE': 'api/v1/documents/',
         'GET, DELETE': 'api/v1/documents/<str:id>/',    
@@ -47,6 +91,7 @@ def docList(request):
 
 @api_view(['GET','DELETE'])
 def docDetail(request, id):
+    permission_classes = (IsAuthenticated,)
     if request.method == 'GET':
         docs = Document.objects.get(_id=ObjectId(id))
         serializer = DocumentSerializer(docs, many=False)
@@ -58,15 +103,24 @@ def docDetail(request, id):
 
 @api_view(['GET','POST','DELETE'])
 def userList(request):
+    permission_classes = (IsAuthenticated,)
     if request.method == 'GET':
         users = User.objects.all()
         serializer = UserSerializer(users, many = True)
         return Response(serializer.data)
     elif request.method == 'POST':
+        # serializer = UserSerializer(data=request.data)
+        username = request.data.get('username')
+        password = request.data.get('password')
+        user = User.objects.create_user(username=username, password=password)
+        print (username, password)
+        return HttpResponse("angelegt")
+        '''
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()  
         return Response(serializer.data)
+        '''
     elif request.method == 'DELETE':
         users = User.objects.all()
         users.delete()

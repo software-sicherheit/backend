@@ -4,17 +4,11 @@ class Document(models.Model):
     _id = models.ObjectIdField()
     title = models.CharField(max_length=20)
     ersteller = models.CharField(max_length=20)
-    
-    def __str__(self):
-        return self.title
 
 class User(models.Model):
-    _id = models.ObjectIdField()
+    # _id = models.ObjectIdField()
     username = models.CharField(max_length=20)
-    password = models.CharField(max_length=20)
-    
-    def __str__(self):
-        return self.username
+    password = models.CharField(max_length=65)
 
 '''
 from django.db import models
