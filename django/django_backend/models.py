@@ -1,3 +1,21 @@
+from djongo import models
+
+class Document(models.Model):
+    _id = models.ObjectIdField()
+    title = models.CharField(max_length=20)
+    ersteller = models.CharField(max_length=20)
+    
+    def __str__(self):
+        return self.title
+
+class User(models.Model):
+    _id = models.ObjectIdField()
+    username = models.CharField(max_length=20)
+    password = models.CharField(max_length=20)
+    
+    def __str__(self):
+        return self.username
+
 '''
 from django.db import models
 from database.management import mongo_management as mm
@@ -20,3 +38,4 @@ if (id == 1):
 
 mongoClient = mm.MongoManagement()
 '''
+

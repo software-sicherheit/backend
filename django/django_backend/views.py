@@ -7,10 +7,89 @@ import json
 sys.path.append(os.getcwd())
 from database.management import mongo_management as mon
 from minio_src import minio_management as min
+from django.http import JsonResponse
+
+from rest_framework.parsers import JSONParser 
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from .serializers import DocumentSerializer, UserSerializer
+from .models import Document, User
+from bson import ObjectId
 
 mongoClient = mon.MongoManagement()
 minioClient = min.MinioManagement("accesskey", "secretkey")
 
+@api_view(['GET'])
+def apiOverview(request):
+    api_urls = {
+        'GET, POST, DELETE': 'api/v1/documents/',
+        'GET, DELETE': 'api/v1/documents/<str:id>/',    
+        'GET, POST, DELETE': 'api/v1/users/',
+        'GET, DELETE': 'api/v1/users/<str:id>/'
+        }
+    return Response(api_urls)
+
+@api_view(['GET','POST','DELETE'])
+def docList(request):
+    if request.method == 'GET':
+        docs = Document.objects.all()
+        serializer = DocumentSerializer(docs, many = True)
+        return Response(serializer.data)
+    elif request.method == 'POST':
+        serializer = DocumentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()  
+        return Response(serializer.data)
+    elif request.method == 'DELETE':
+        docs = Document.objects.all()
+        docs.delete()
+        return HttpResponse("deleted")
+
+@api_view(['GET','DELETE'])
+def docDetail(request, id):
+    if request.method == 'GET':
+        docs = Document.objects.get(_id=ObjectId(id))
+        serializer = DocumentSerializer(docs, many=False)
+        return Response(serializer.data)
+    elif request.method == 'DELETE':
+        doc = Document.objects.get(_id=ObjectId(id))
+        doc.delete()
+        return HttpResponse("Dokument gelöscht")
+
+@api_view(['GET','POST','DELETE'])
+def userList(request):
+    if request.method == 'GET':
+        users = User.objects.all()
+        serializer = UserSerializer(users, many = True)
+        return Response(serializer.data)
+    elif request.method == 'POST':
+        serializer = UserSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()  
+        return Response(serializer.data)
+    elif request.method == 'DELETE':
+        users = User.objects.all()
+        users.delete()
+        return HttpResponse("deleted")
+
+@api_view(['GET','DELETE'])
+def userDetail(request, id):
+    if request.method == 'GET':
+        users = User.objects.get(_id=ObjectId(id))
+        serializer = UserSerializer(user, many=False)
+        return Response(serializer.data)
+    elif request.method == 'DELETE':
+        user = User.objects.get(_id=ObjectId(id))
+        user.delete()
+        return HttpResponse("Dokument gelöscht")
+
+    '''
+    doc_data = JSONParser().parse(request)
+    serializer = DocumentSerializer(data=doc_data)
+    if serializer.is_valid():
+        serializer.save()
+    return Response(serializer.data)
+    '''
 '''
 dependencies needed on server: pymongo, environs
 '''
