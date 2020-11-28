@@ -2,9 +2,15 @@ from djongo import models
 
 class Document(models.Model):
     _id = models.ObjectIdField()
-    title = models.CharField(max_length=20)
-    ersteller = models.CharField(max_length=20)
-    
+    filename = models.CharField(max_length=40)
+    contentType = models.CharField(max_length=40)
+    size = models.DecimalField(..., max_digits=10, decimal_places=2)
+    lastmodifieddate = models.CharField(max_length=40)
+    blob = models.CharField(max_length=1048576) # 10 Mb
+    #'{"id":"11","filename":"robert","contentType":"file.type","size":"8",' \
+    #'"lastModi$iedDate":"file.lastModifiedDate","blob":"blobdata"}'
+
+
     def __str__(self):
         return self.title
 

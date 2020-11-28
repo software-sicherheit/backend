@@ -2,6 +2,7 @@ from minio import Minio
 from minio.error import ResponseError, BucketAlreadyExists
 import os
 from environs import Env
+import json
 
 class MinioManagement:
 
@@ -34,9 +35,6 @@ class MinioManagement:
             except ResponseError as identifier:
                 raise
         try:
-#            with open(file_path, 'rb') as user_file:
-#                statdata = os.stat('/tmp/test.txt')
-
                 con_filename = str(uuid) + '/' + str(file_name)
                 print("Shouldgivethefilenamehere: ")
                 print(con_filename)
@@ -50,47 +48,76 @@ class MinioManagement:
             raise
 
 # Generates a string list and returns it, no given uuid => get whole bucket
+# Generates a list of filenames, used to delete multiple files
     def generate_object_list(self, uuid=None):
         if self.client.bucket_exists(self.bucket_name):
             try:
                 if uuid is None:
-                    objects = self.client.list_objects(self.bucket_name)
+                    objects = self.client.list_objects(self.bucket_name, recursive=True)
                 else:
                     # p1:bucketname,p2:prefix,p3:recursive?,p4:includeversion
-                    objects = self.client.list_objects(self.bucket_name, uuid, True)
-                    #fill object_list with all objects starting with uuid
-                    #stringcompare
-                    #uuid_files_list = []
-                    #for x in object_list:
-                    #    print(x)
-                    #    if x.startswith(str(uuid)):
-                    #        print("Minio: uuid? x: ")
-                    #        print(x)
-                    #        uuid_files_list.append(x)
-                    #object_list = uuid_files_list
+                    objects = self.client.list_objects(self.bucket_name, prefix=uuid+'/', recursive=True)
                 object_list = [x.object_name for x in objects]
-                print("Generated objects list: ")
-                print(object_list)
                 return object_list
             except ResponseError as identifier:
                 raise
 
+    # Generates a json list with all elements and returns it, no given uuid => get whole bucket
+    def generate_jsonobject_list(self, uuid=None):
+        if self.client.bucket_exists(self.bucket_name):
+            try:
+                if uuid is None:
+                    objects = self.client.list_objects(self.bucket_name, recursive=True)
+                else:
+                    # p1:bucketname,p2:prefix,p3:recursive?,p4:includeversion
+                    objects = self.client.list_objects(self.bucket_name, prefix=uuid, recursive=True)
+
+                jsondata = []
+                for x in objects:
+                    jsondata.append(
+                    {
+                        'id':               uuid,                 # to be filled in views from jwt
+                        'filename':         str(x.object_name),
+                        'contentType':      str(x.content_type),
+                        'size':             int(x.size),
+                        'lastModifiedDate': str(x.last_modified),
+                    })
+                return jsondata
+            except ResponseError as identifier:
+                raise
+
 # Get file returns an object in the form of an httpResponse
-    def get_file(self, file_name):
+    def get_file(self, uuid, file_name):
         try:
-            response = self.client.get_object(self.bucket_name, file_name)
-            print(response.data.decode())
-            return response
+            path = uuid + "/" + file_name
+            response = self.client.get_object(self.bucket_name, path)
+            object = self.client.list_objects(self.bucket_name, prefix=path, recursive=False)
+
+            jsondata = []
+            for x in object: # todo: how do i access subelements?
+                test = str(x.object_name).split('/')[1]
+                jsondata.append(
+                    {
+                        'id': uuid,
+                        'filename': str(x.object_name).split('/')[1],
+                        'contentType': str(x.content_type),
+                        'size': int(x.size),
+                        'lastModifiedDate': str(x.last_modified),
+                        'blob' : response.data.decode()
+                    })
+
+            return jsondata
         except ResponseError as identifier:
             raise
         finally:
             response.close()
             response.release_conn()
 
-    def  remove_file(self, bucket_name, object_name, object_version_id):
-        if self.client.bucket_exists( bucket_name ):
+    def  remove_file(self, uuid, object_name):
+        if self.client.bucket_exists( self.bucket_name ):
             try:
-                self.client.remove_object(bucket_name, object_name) #add version id handeling if needed
+                path = uuid+"/"+object_name
+                self.client.remove_object(self.bucket_name, path)
             except ResponseError as identifier:
                 raise
 
