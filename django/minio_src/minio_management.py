@@ -63,7 +63,7 @@ class MinioManagement:
                 raise
 
     # Generates a json list with all elements and returns it, no given uuid => get whole bucket
-    def generate_jsonobject_list(self, uuid=None):
+    def generate_object_list_json(self, uuid=None):
         if self.client.bucket_exists(self.bucket_name):
             try:
                 if uuid is None:
@@ -77,7 +77,7 @@ class MinioManagement:
                     jsondata.append(
                     {
                         'id':               uuid,                 # to be filled in views from jwt
-                        'filename':         str(x.object_name),
+                        'filename':         str(x.object_name).split('/')[1],
                         'contentType':      str(x.content_type),
                         'size':             int(x.size),
                         'lastModifiedDate': str(x.last_modified),

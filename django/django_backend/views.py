@@ -62,7 +62,6 @@ class LoginView(generics.GenericAPIView):
             #SEND RESPONSE
         return Response({'detail':'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
-
 # api/v1/
 @api_view(['GET'])
 def apiOverview(request):
@@ -81,8 +80,9 @@ def apiOverview(request):
 def docList(request):
     if request.method == 'GET':
         try:
-            uuid = "0011" # todo: get uuid from jwt token
-            return Response( minioClient.generate_jsonobject_list())#uuid) )
+            uuid = 11
+            uuid = str(uuid).zfill(4) # todo: get uuid from jwt token
+            return Response( minioClient.generate_object_list_json())#uuid) )
         except:
             return Response( HttpResponse(400) ) # Bad request
     elif request.method == 'POST': # Testwith: {"id":"0011","filename":"bananenbrotsalat","contentType":"file.type","size":"8","lastModifiedDate":"lastModifiedDate","blob":"blobdata"}
@@ -90,6 +90,7 @@ def docList(request):
             jsondata = json.loads(request.body.decode('UTF-8'))
             buffer = io.BytesIO(bytes(jsondata['blob'], 'ascii'))
             uuid = jsondata['id'] # todo: get uuid from jwt
+            uuid = str(uuid).zfill(4)
             minioClient.put_object( str(uuid), jsondata['filename'], buffer, int(jsondata['size']))
             return Response(201)  # created
         except:
@@ -103,13 +104,15 @@ def docDetail(request, id):
         try:
             print("ID:")
             print(id)
-            uuid = '0011' # todo: get from jwt token # Path is uudi/id
+            uuid = 11 # todo: get from jwt token # Path is uudi/id
+            uuid = str(uuid).zfill(4) # todo: get uuid from jwt token
             return Response( minioClient.get_file( str(uuid), str(id) ) )
         except:
             return Response(400)
     elif request.method == 'DELETE':
         try:
             uuid = "0011" # todo: get from jwt token
+            uuid = str(uuid).zfill(4)
             minioClient.remove_file( str(uuid), str(id) )
             return Response(200)
         except:
@@ -154,7 +157,6 @@ def userDetail(request, id):
         minioClient.purge_user(int(id))  # Deletes all files of user
         user.delete()
         return HttpResponse("Dokument gelöscht")
-
 
 
     # End Land #
