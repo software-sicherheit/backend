@@ -5,13 +5,28 @@ services:
     container_name: db-e2e-cloud-storage
     volumes: 
       - ./mongo-volume:/data/db
-    environment: 
-      - MONGO_INITDB_ROOT_USERNAME=user
-      - MONGO_INITDB_ROOT_PASSWORD=pass
+        #environment: 
+        #- MONGO_INITDB_ROOT_USERNAME=mongodb_user
+        #- MONGO_INITDB_ROOT_PASSWORD=20softsich20
     networks: 
       - e2e-cloud-storage-network
     ports: 
       - 27017:27017
+  
+  backend-e2e-cloud-storage:
+    #image: mongo:4.4.1
+    build: .
+    depends_on: 
+      - s3storage-e2e-cloud-storage
+      - db-e2e-cloud-storage
+    container_name: backend-e2e-cloud-storage
+    enviroment:
+      - DJANGO_SUPERUSER_USERNAME=admin
+      - DJANGO_SUERPUSER_PASSWORD=20softsich20
+    networks: 
+      - e2e-cloud-storage-network
+    ports: 
+      - 8080:8080
   
   s3storage-e2e-cloud-storage:
     image: minio/minio:RELEASE.2020-11-10T21-02-24Z
