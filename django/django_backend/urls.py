@@ -21,6 +21,8 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/', views.apiOverview),
+    # path('api/v1/register/', views.RegisterView.as_view()),
+    path('api/v1/login/', views.LoginView.as_view()),
     path('api/v1/documents/', views.docList),
     path('api/v1/documents/<str:id>', views.docDetail),
     path('api/v1/users/', views.userList),
