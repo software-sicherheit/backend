@@ -8,7 +8,7 @@ sys.path.append(os.getcwd())
 from database.management import mongo_management as mon
 from minio_src import minio_management as min
 
-from rest_framework import generics, permissions, mixins, status
+from rest_framework import generics, permissions, mixins, status, exceptions
 from rest_framework.parsers import JSONParser 
 
 
@@ -16,53 +16,87 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .serializers import DocumentSerializer, UserSerializer, RegisterSerializer
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, get_user_model
 from django.contrib.auth.models import User
 from django.conf import settings
 from .models import Document
 from bson import ObjectId
 import jwt
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
+from . import backends
+from .utils import generate_access_token, generate_refresh_token
 
 mongoClient = mon.MongoManagement()
 minioClient = min.MinioManagement("accesskey", "secretkey")
-'''
+
 class RegisterView(generics.GenericAPIView):
     serializer_class = RegisterSerializer
     def post (self, request, *args, **kwargs): 
         serializer = RegisterSerializer(data=request.data)
+        response = Response()
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data, status = status.HTTP_201_CREATED)
-        return Response(serializer.data, status = status.HTTP_400_BAD_REQUEST)
-'''
-class LoginView(generics.GenericAPIView):
-    serializer_class = UserSerializer
-    def post(self, request):
-        permission_classes = (IsAuthenticated,)   
-        data = request.data
-        username = data.get('username','')
-        password = data.get('password','')
-        print (username, password)
-        user = authenticate(request, username=username, password=password)
-        print (user)
-        if user:
-            print("hallo")
-            # Token wird erstellt, weitere Informationen können hinzugefügt werden
-            auth_token=jwt.encode(
-                {'username':user.username}, settings.JWT_SECRET_KEY)
-
-            serializer=UserSerializer(user)
-
-            data={
-                'user':serializer.data,
-                'token': auth_token
+            username = request.data.get('username')
+            user = User.objects.filter(username=username).first()
+            serialized_user = UserSerializer(user).data
+            access_token = generate_access_token(user)
+            refresh_token = generate_refresh_token(user)
+            response.set_cookie(key='refreshtoken', value=refresh_token, httponly=True)
+            response.data = {
+                'access_token': access_token,
+                'user_id': serialized_user['id'],
             }
-            return Response(data, status=status.HTTP_200_OK)
+            return response
+        return Response(serializer.data, status = status.HTTP_400_BAD_REQUEST)
 
-            #SEND RESPONSE
-        return Response({'detail':'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+@api_view(['POST'])
+def login_view(request):
+    permission_classes = (IsAuthenticated,)
+    User = get_user_model()
+    username = request.data.get('username')
+    password = request.data.get('password')
+    response = Response()
+    if (username is None) or (password is None):
+        raise exceptions.AuthenticationFailed(
+            'username and password required')
 
-# api/v1/
+    user = User.objects.filter(username=username).first()
+    if(user is None):
+        raise exceptions.AuthenticationFailed('user not found')
+    if (not user.check_password(password)):
+        raise exceptions.AuthenticationFailed('wrong password')
+
+    serialized_user = UserSerializer(user).data
+
+    access_token = generate_access_token(user)
+    refresh_token = generate_refresh_token(user)
+
+    response.set_cookie(key='refreshtoken', value=refresh_token, httponly=True)
+    response.data = {
+        'access_token': access_token,
+        'user_id': serialized_user['id'],
+    }
+
+    return response
+'''
+class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        refresh = self.get_token(self.user)
+        data['refresh'] = str(refresh)
+        data['access'] = str(refresh.access_token)
+
+        # Add extra responses here
+        data['username'] = self.user.username
+        data['groups'] = self.user.groups.values_list('name', flat=True)
+        return data
+
+
+class MyTokenObtainPairView(TokenObtainPairView):
+    serializer_class = MyTokenObtainPairSerializer 
+'''
+
 @api_view(['GET'])
 def apiOverview(request):
     permission_classes = (IsAuthenticated,)
@@ -134,12 +168,6 @@ def userList(request):
         user = User.objects.create_user(username=username, password=password)
         print (username, password)
         return HttpResponse("angelegt")
-        '''
-        serializer = UserSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()  
-        return Response(serializer.data)
-        '''
     elif request.method == 'DELETE':
         users = User.objects.all()
         users.delete()

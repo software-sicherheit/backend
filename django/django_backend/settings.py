@@ -19,6 +19,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = '#d%=)^ahx*!tr2l^&w!exds53(if3(jgq&kv6q0%@ysm)4p+#j'
+REFRESH_TOKEN_SECRET = '#d%=)^ahx*!tr2l^&w!exds53(if3(jgq&kv6q0%@ysm)4p+#j'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -150,7 +151,8 @@ STATIC_URL = '/static/'
 
 REST_FRAMEWORK = {
     #'DEFAULT_PERMISSION_CLASSES' : ('rest_framework.permissions.IsAuthenticated',),
-    'DEFAULT_AUTHENTICATION_CLASSES' : ('rest_framework_simplejwt.authentication.JWTAuthentication',)
+    # 'DEFAULT_AUTHENTICATION_CLASSES' : ('rest_framework_simplejwt.authentication.JWTAuthentication',)
+    'EFAULT_AUTHENTICATION_CLASSES' : 'django_backend.SafeJWTAuthentication'
 }
 
 #JWT
