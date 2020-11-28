@@ -7,10 +7,11 @@ import json
 sys.path.append(os.getcwd())
 from database.management import mongo_management as mon
 from minio_src import minio_management as min
-from django.http import JsonResponse
 
 from rest_framework import generics, permissions, mixins, status, exceptions
 from rest_framework.parsers import JSONParser 
+
+
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -100,41 +101,59 @@ class MyTokenObtainPairView(TokenObtainPairView):
 def apiOverview(request):
     permission_classes = (IsAuthenticated,)
     api_urls = {
-        'GET, POST, DELETE': 'api/v1/documents/',
-        'GET, DELETE': 'api/v1/documents/<str:id>/',    
-        'GET, POST, DELETE': 'api/v1/users/',
-        'GET, DELETE': 'api/v1/users/<str:id>/'
+        # Without #numbers the dict confuses the 'key':'value' pairs cause of similar keys
+        '1. GET, POST, DELETE': 'api/v1/documents/',
+        '2. GET, DELETE': 'api/v1/documents/<str:id>/',
+        '3. GET, POST, DELETE': 'api/v1/users/',
+        '4. GET, DELETE': 'api/v1/users/<str:id>/',
         }
     return Response(api_urls)
 
-@api_view(['GET','POST','DELETE'])
+# /api/v1/documents/
+@api_view(['GET','POST'])
 def docList(request):
     if request.method == 'GET':
-        docs = Document.objects.all()
-        serializer = DocumentSerializer(docs, many = True)
-        return Response(serializer.data)
-    elif request.method == 'POST':
-        serializer = DocumentSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()  
-        return Response(serializer.data)
-    elif request.method == 'DELETE':
-        docs = Document.objects.all()
-        docs.delete()
-        return HttpResponse("deleted")
+        try:
+            uuid = 11
+            uuid = str(uuid).zfill(4) # todo: get uuid from jwt token
+            return Response( minioClient.generate_object_list_json())#uuid) )
+        except:
+            return Response( HttpResponse(400) ) # Bad request
+    elif request.method == 'POST': # Testwith: {"id":"0011","filename":"bananenbrotsalat","contentType":"file.type","size":"8","lastModifiedDate":"lastModifiedDate","blob":"blobdata"}
+        try:
+            jsondata = json.loads(request.body.decode('UTF-8'))
+            buffer = io.BytesIO(bytes(jsondata['blob'], 'ascii'))
+            uuid = jsondata['id'] # todo: get uuid from jwt
+            uuid = str(uuid).zfill(4)
+            minioClient.put_object( str(uuid), jsondata['filename'], buffer, int(jsondata['size']))
+            return Response(201)  # created
+        except:
+            return Response(400) #Bad request cause of invalid syntax
 
+# api/v1/documents/<str:id> # downloads and deletes specific files from database
 @api_view(['GET','DELETE'])
 def docDetail(request, id):
     permission_classes = (IsAuthenticated,)
     if request.method == 'GET':
-        docs = Document.objects.get(_id=ObjectId(id))
-        serializer = DocumentSerializer(docs, many=False)
-        return Response(serializer.data)
+        try:
+            print("ID:")
+            print(id)
+            uuid = 11 # todo: get from jwt token # Path is uudi/id
+            uuid = str(uuid).zfill(4) # todo: get uuid from jwt token
+            return Response( minioClient.get_file( str(uuid), str(id) ) )
+        except:
+            return Response(400)
     elif request.method == 'DELETE':
-        doc = Document.objects.get(_id=ObjectId(id))
-        doc.delete()
-        return HttpResponse("Dokument gelöscht")
+        try:
+            uuid = "0011" # todo: get from jwt token
+            uuid = str(uuid).zfill(4)
+            minioClient.remove_file( str(uuid), str(id) )
+            return Response(200)
+        except:
+            Response(400)
+        return HttpResponse(200)
 
+# api/v1/users/
 @api_view(['GET','POST','DELETE'])
 def userList(request):
     permission_classes = (IsAuthenticated,)
@@ -154,16 +173,21 @@ def userList(request):
         users.delete()
         return HttpResponse("deleted")
 
+# api/v1/users/<user_id>
 @api_view(['GET','DELETE'])
 def userDetail(request, id):
     if request.method == 'GET':
         users = User.objects.get(_id=ObjectId(id))
-        serializer = UserSerializer(user, many=False)
+        serializer = UserSerializer(users, many=False)
         return Response(serializer.data)
     elif request.method == 'DELETE':
         user = User.objects.get(_id=ObjectId(id))
+        minioClient.purge_user(int(id))  # Deletes all files of user
         user.delete()
         return HttpResponse("Dokument gelöscht")
+
+
+    # End Land #
 
     '''
     doc_data = JSONParser().parse(request)
@@ -172,9 +196,6 @@ def userDetail(request, id):
         serializer.save()
     return Response(serializer.data)
     '''
-'''
-dependencies needed on server: pymongo, environs
-'''
 
 #todo: try catching
 
@@ -220,7 +241,6 @@ def edit_documents (request, document_id=None):
 
             data = request.body.decode('UTF-8')
             jsondata = json.loads(data)
-
             buffer = io.BytesIO( bytes( jsondata['blob'], 'ascii') )
             minioClient.put_object(jsondata['id'], jsondata['filename'], buffer, int(jsondata['size']))
             return HttpResponse(id)
