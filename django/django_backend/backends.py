@@ -3,25 +3,31 @@ from rest_framework import authentication, exceptions
 from django.conf import settings
 from django.contrib.auth.models import User
 
-class JWTAuthentication(authentication.BaseAuthentication):
-
+class SafeJWTAuthentication(authentication.BaseAuthentication):
     def authenticate(self, request):
-        auth_data = authentication.get_authorization_header(request)
 
-        if not auth_data:
+        User = get_user_model()
+        authorization_header = request.headers.get('Authorization')
+
+        if not authorization_header:
             return None
-        
-        prefix, token=auth_data.decode('utf-8').split(' ')
-
         try:
-            payload=jwt.decode(token,settings.JWT_SECRET_KEY)
+            # header = 'Token xxxxxxxxxxxxxxxxxxxxxxxx'
+            access_token = authorization_header.split(' ')[1]
+            payload = jwt.decode(
+                access_token, settings.SECRET_KEY, algorithms=['HS256'])
 
-            user = User.objects.get(username=payload['username'])
-            return (user, token)
+        except jwt.ExpiredSignatureError:
+            raise exceptions.AuthenticationFailed('access_token expired')
+        except IndexError:
+            raise exceptions.AuthenticationFailed('Token prefix missing')
 
-        except jwt.DecodeError as identifier:
-            raise exceptions.AuthenticationFailed ('Your token is invalid')
-        except jwt.ExpiredSignatureError as identifier:
-            raise exceptions.AuthenticationFailed ('Your token is expired')
+        user = User.objects.filter(id=payload['user_id']).first()
+        if user is None:
+            raise exceptions.AuthenticationFailed('User not found')
 
-        return super().authenticate(request)
+        if not user.is_active:
+            raise exceptions.AuthenticationFailed('user is inactive')
+
+        # self.enforce_csrf(request)
+        # return (user, None)

@@ -16,18 +16,19 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path,include
 from . import views
+# from .views import MyTokenObtainPairView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/', views.apiOverview),
-    # path('api/v1/register/', views.RegisterView.as_view()),
-    path('api/v1/login/', views.LoginView.as_view()),
+    path('api/v1/register/', views.RegisterView.as_view()),
+    path('api/v1/login/', views.login_view),
     path('api/v1/documents/', views.docList),
     path('api/v1/documents/<str:id>', views.docDetail),
     path('api/v1/users/', views.userList),
     path('api/v1/users/<user_id>', views.userDetail),
     path('api/v1/api-auth/', include('rest_framework.urls')),
-    path('api/v1/token/', TokenObtainPairView.as_view()),
-    path('api/v1/token/refresh/', TokenRefreshView.as_view())
+    #path('api/v1/token/', TokenObtainPairView.as_view()),
+    #path('api/v1/token/refresh/', TokenRefreshView.as_view())
 ]
