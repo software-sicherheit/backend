@@ -114,11 +114,17 @@ def apiOverview(request):
 # /api/v1/documents/
 @api_view(['GET','POST'])
 def docList(request):
+    permission_classes = (IsAuthenticated,)
     if request.method == 'GET':
         try:
-            uuid = 11
+            authorization_header = request.headers.get('Authorization')
+            access_token = authorization_header.split(' ')[1]
+            payload = jwt.decode(
+                access_token, settings.SECRET_KEY, algorithms=['HS256'])
+            uuid = payload['user_id']
+            # uuid = 11
             uuid = str(uuid).zfill(4) # todo: get uuid from jwt token
-            return Response( minioClient.generate_object_list_json())#uuid) )
+            return Response(minioClient.generate_object_list_json(uuid) )
         except:
             return Response( HttpResponse(400) ) # Bad request
     elif request.method == 'POST': # Testwith: {"id":"0011","filename":"bananenbrotsalat","contentType":"file.type","size":"8","lastModifiedDate":"lastModifiedDate","blob":"blobdata"}
