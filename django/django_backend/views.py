@@ -12,10 +12,10 @@ from rest_framework import generics, permissions, mixins, status, exceptions
 from rest_framework.parsers import JSONParser 
 
 
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from .serializers import UserSerializer, RegisterSerializer
+from .serializers import UserSerializer, RegisterSerializer, MinioMetaSerializer
 from django.contrib.auth import authenticate, login, get_user_model
 from django.contrib.auth.models import User
 from django.conf import settings
@@ -24,9 +24,10 @@ from bson import ObjectId
 import jwt
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
-# from . import backends
-from .utils import generate_access_token, generate_refresh_token
+from .utils import generate_access_token
 import psutil
+from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.auth.decorators import permission_required
 
 mongoClient = mon.MongoManagement()
 minioClient = min.MinioManagement("accesskey", "secretkey")
@@ -38,71 +39,49 @@ class RegisterView(generics.GenericAPIView):
         response = Response()
         username = request.data.get('username')
         password = request.data.get('password')
-        if (username is None) or (password is None):
-            return Response(status = status.HTTP_400_BAD_REQUEST)
-        user = User.objects.create_user(username=username, password=password)
+        if username == '':
+            return Response(status = status.HTTP_406_NOT_ACCEPTABLE)
+        try:
+            user = User.objects.create_user(username=username, password=password)
+        except:
+            return Response(status = status.HTTP_409_CONFLICT)
         user = User.objects.filter(username=username).first()
         serialized_user = UserSerializer(user).data
         access_token = generate_access_token(user)
-        refresh_token = generate_refresh_token(user)
-        response.set_cookie(key='refreshtoken', value=refresh_token, httponly=True)
+        # response.set_cookie(key='refreshtoken', value=refresh_token, httponly=True)
         response.data = {
             'access_token': access_token,
-            'user_id': serialized_user['id'],
         }
-        return response
+
+        return Response(response.data, status=status.HTTP_200_OK)
         # return Response(serializer.data, status = status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
 def login_view(request):
-    permission_classes = (IsAuthenticated,)
     User = get_user_model()
     username = request.data.get('username')
     password = request.data.get('password')
+    if username == '' or password == '':
+        return Response(status = status.HTTP_406_NOT_ACCEPTABLE)
+    
     response = Response()
-    if (username is None) or (password is None):
-        raise exceptions.AuthenticationFailed(
-            'username and password required')
-
     user = User.objects.filter(username=username).first()
-    if(user is None):
-        raise exceptions.AuthenticationFailed('user not found')
-    if (not user.check_password(password)):
-        raise exceptions.AuthenticationFailed('wrong password')
+    if user is None or not user.check_password(password):
+        return Response(status = status.HTTP_401_UNAUTHORIZED)
 
     serialized_user = UserSerializer(user).data
-
     access_token = generate_access_token(user)
-    refresh_token = generate_refresh_token(user)
 
-    response.set_cookie(key='refreshtoken', value=refresh_token, httponly=True)
+    # response.set_cookie(key='refreshtoken', value=refresh_token, httponly=True)
     response.data = {
         'access_token': access_token,
-        'user_id': serialized_user['id'],
     }
 
-    return response
-'''
-class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
-    def validate(self, attrs):
-        data = super().validate(attrs)
-        refresh = self.get_token(self.user)
-        data['refresh'] = str(refresh)
-        data['access'] = str(refresh.access_token)
-
-        # Add extra responses here
-        data['username'] = self.user.username
-        data['groups'] = self.user.groups.values_list('name', flat=True)
-        return data
-
-
-class MyTokenObtainPairView(TokenObtainPairView):
-    serializer_class = MyTokenObtainPairSerializer     
-'''
+    return Response(response.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
+# @permission_classes((IsAuthenticated, ))
 def apiOverview(request):
-    permission_classes = (IsAuthenticated,)
     api_urls = {
         # Without #numbers the dict confuses the 'key':'value' pairs cause of similar keys
         '1. GET, POST, DELETE': 'api/v1/documents/',
@@ -121,13 +100,13 @@ def get_uuid_from_jwt(request):
 
 # /api/v1/documents/
 @api_view(['GET','POST'])
+# @permission_classes((IsAuthenticated, ))
 def docList(request):
-    permission_classes = (IsAuthenticated,)
     if request.method == 'GET':
         try:
-            return Response(minioClient.generate_object_list_json(get_uuid_from_jwt(request)) )
+            return Response(minioClient.generate_object_list_json(get_uuid_from_jwt(request)))
         except:
-            return Response( HttpResponse(400) ) # Bad request
+            return Response(status=status.HTTP_404_NOT_FOUND) # Bad request
     elif request.method == 'POST': # Testwith: {"id":"0011","filename":"bananenbrotsalat","contentType":"file.type","size":"8","lastModifiedDate":"lastModifiedDate","blob":"blobdata"}
         try:
             jsondata = json.loads(request.body.decode('UTF-8'))
@@ -135,13 +114,13 @@ def docList(request):
 
             minioClient.put_object( get_uuid_from_jwt(request), jsondata['filename'], buffer, int(jsondata['size']))
             return Response(201)  # c reate d
-        except:
-            return Response(400) #Bad request cause of invalid syntax
+        except Exception as e:
+            return Response(status=status.HTTP_404_NOT_FOUND) #Bad request cause of invalid syntax
 
 # api/v1/documents/<str:id> # downloads and deletes specific files from database
 @api_view(['GET','DELETE'])
+@permission_classes((IsAuthenticated, ))
 def docDetail(request, id):
-    permission_classes = (IsAuthenticated,)
     if request.method == 'GET':
         try:
             return Response( minioClient.get_file( get_uuid_from_jwt(request), str(id) ) )
@@ -156,49 +135,78 @@ def docDetail(request, id):
         return HttpResponse(200)
 
 # api/v1/users/
-@api_view(['GET','POST','DELETE'])
+@api_view(['GET','POST', 'DELETE'])
+# @permission_classes((IsAuthenticated, ))
 def userList(request):
-    permission_classes = (IsAuthenticated,)
     if request.method == 'GET':
-        users = User.objects.all()
-        serializer = UserSerializer(users, many = True)
-        return Response(serializer.data)
+        uuid = get_uuid_from_jwt(request)
+        # minioMeta = MinioMeta.objects.filter(uuid=uuid)
+        minioMeta = MinioMeta.objects.all()
+        if minioMeta is None:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        serializer = MinioMetaSerializer(minioMeta, many=False)
+        serializer.data,     
+        return Response(status=status.HTTP_200_OK) 
     elif request.method == 'POST':
         uuid = get_uuid_from_jwt(request)
+        passwordKey = request.data.get('passwordKey')
         oaep = request.data.get('rsaOAEP')
         pss = request.data.get('rsaPSS')
-        dataNameKey = request.data.get('dataNameKey')
-        minioMeta = MinioMeta(uuid=uuid, oaep=oaep, pss=pss, dataNameKey=dataNameKey)
-        minioMeta.save()
-        return HttpResponse(200)
-
-# api/v1/users/<user_id>
-@api_view(['GET','DELETE'])
-def userDetail(request, id):
-    if request.method == 'GET':
-        users = User.objects.get(id=id)
-        serializer = UserSerializer(users, many=False)
-        return Response(serializer.data)
+        dataNameKey = request.data.get('dataNameKey')      
+        try:
+            minioMeta = MinioMeta(uuid=uuid, passwordKey=passwordKey, oaep=oaep, pss=pss, dataNameKey=dataNameKey)
+            minioMeta.save()
+        except:
+            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response(status=status.HTTP_200_OK)
     elif request.method == 'DELETE':
         uuid = get_uuid_from_jwt(request)
-        r = [] # append Reesponses
+        user = User.objects.get(id=uuid)
+        user.delete()
+        ## Redirect
+        return Response (status=status.HTTP_200_OK)
+
+# api/v1/admin/users/
+# @staff_member_required
+@api_view(['GET'])
+# @permission_required('is_superuser')
+# @staff_member_required
+def userAll(request):
+    if request.method == 'GET':
+        users = User.objects.all()
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+# api/v1/admin/users/<user_id>
+# @staff_member_required
+#@permission_required('is_superuser')
+@api_view(['DELETE'])
+def userDelete(request, id):
+    if request.method == 'DELETE':
+        uuid = get_uuid_from_jwt(request)
+        resp = {}
         try:
             miniometa = MinioMeta.objects.filter(uuid=id)
             miniometa.delete()
+            resp = resp + {'MinioMeta':'pass'}
         except Exception as e:
-            return HttpResponse(e)
+            resp = resp + {'MinioMeta':e}
         try:
             user = User.objects.get(id=id)
             user.delete()
+            resp = resp + {'User':'pass'}
         except Exception as e:
-            return HttpResponse (e)
+            resp = resp + {'User':e}
         try:
             minioClient.purge_user(int(id))  # Deletes all files of user
+            resp = resp + {'MinioData':'pass'}
         except Exception as e: 
-            return HttpResponse(e)
-        return HttpResponse("User gelöscht")
+            resp = resp + {'MinioData':e}
+        return HttpResponse(str(resp))
+
 
 @api_view(['GET'])
+@staff_member_required
 def statistic(request):
 
     #dict.keys()

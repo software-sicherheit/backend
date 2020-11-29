@@ -19,6 +19,7 @@ class User(models.Model):
 
 class MinioMeta(models.Model):
     uuid = models.CharField(max_length=10, primary_key=True)
+    passwordKey = jsonfield.JSONField()
     oaep = jsonfield.JSONField()
     pss = jsonfield.JSONField()
     dataNameKey = jsonfield.JSONField()

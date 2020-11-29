@@ -6,3 +6,4 @@ djangorestframework
 djangorestframework-simplejwt
 minio
 psutil
+django-jsonfield
