@@ -1,17 +1,29 @@
 # from djongo import models
 from django.db import models
+#from django_mysql.models import JSONField
+import jsonfield
 
+'''
 class Document(models.Model):
     #id = models.ObjectIdField()
     # id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=20)
     ersteller = models.CharField(max_length=20)
-
-
+'''
+'''
 class User(models.Model):
     # _id = models.ObjectIdField()
     username = models.CharField(max_length=20)
     password = models.CharField(max_length=65)
+'''
+
+class MinioMeta(models.Model):
+    uuid = models.CharField(max_length=10, primary_key=True)
+    oaep = jsonfield.JSONField()
+    pss = jsonfield.JSONField()
+    dataNameKey = jsonfield.JSONField()
+
+    objects = models.Manager()
 
 '''
 from django.db import models

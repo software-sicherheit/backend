@@ -15,11 +15,11 @@ from rest_framework.parsers import JSONParser
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from .serializers import DocumentSerializer, UserSerializer, RegisterSerializer
+from .serializers import UserSerializer, RegisterSerializer
 from django.contrib.auth import authenticate, login, get_user_model
 from django.contrib.auth.models import User
 from django.conf import settings
-from .models import Document
+from .models import MinioMeta
 from bson import ObjectId
 import jwt
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -151,7 +151,7 @@ def docDetail(request, id):
             minioClient.remove_file( get_uuid_from_jwt(request), str(id) )
             return Response(200)
         except:
-            Response(400)
+            return Response(400)
         return HttpResponse(200)
 
 # api/v1/users/
@@ -163,31 +163,41 @@ def userList(request):
         serializer = UserSerializer(users, many = True)
         return Response(serializer.data)
     elif request.method == 'POST':
-        # serializer = UserSerializer(data=request.data)
-        username = request.data.get('username')
-        password = request.data.get('password')
-        user = User.objects.create_user(username=username, password=password)
-        print (username, password)
-        return HttpResponse("angelegt")
-    elif request.method == 'DELETE':
-        users = User.objects.all()
-        users.delete()
-        return HttpResponse("deleted")
+        uuid = get_uuid_from_jwt(request)
+        oaep = request.data.get('rsaOAEP')
+        pss = request.data.get('rsaPSS')
+        dataNameKey = request.data.get('dataNameKey')
+        minioMeta = MinioMeta(uuid=uuid, oaep=oaep, pss=pss, dataNameKey=dataNameKey)
+        minioMeta.save()
+        return HttpResponse(200)
 
 # api/v1/users/<user_id>
 @api_view(['GET','DELETE'])
 def userDetail(request, id):
     if request.method == 'GET':
-        users = User.objects.get(_id=ObjectId(id))
+        users = User.objects.get(id=id)
         serializer = UserSerializer(users, many=False)
         return Response(serializer.data)
     elif request.method == 'DELETE':
-        user = User.objects.get(_id=ObjectId(id))
-        minioClient.purge_user(int(id))  # Deletes all files of user
-        user.delete()
-        return HttpResponse("Dokument gelöscht")
+        uuid = get_uuid_from_jwt(request)
+        r = [] # append Reesponses
+        try:
+            miniometa = MinioMeta.objects.filter(uuid=id)
+            miniometa.delete()
+        except Exception as e:
+            return HttpResponse(e)
+        try:
+            user = User.objects.get(id=id)
+            user.delete()
+        except Exception as e:
+            return HttpResponse (e)
+        try:
+            minioClient.purge_user(int(id))  # Deletes all files of user
+        except Exception as e: 
+            return HttpResponse(e)
+        return HttpResponse("User gelöscht")
 
-    # End Land #
+    # Land in Sicht#
 
 '''
 doc_data = JSONParser().parse(request)

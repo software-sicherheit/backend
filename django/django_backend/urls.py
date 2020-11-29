@@ -27,8 +27,8 @@ urlpatterns = [
     path('api/v1/documents/', views.docList),
     path('api/v1/documents/<str:id>', views.docDetail),
     path('api/v1/users/', views.userList),
-    path('api/v1/users/<user_id>', views.userDetail),
-    path('api/v1/api-auth/', include('rest_framework.urls')),
+    path('api/v1/users/<str:id>', views.userDetail)
+    # path('api/v1/api-auth/', include('rest_framework.urls')),
     #path('api/v1/token/', TokenObtainPairView.as_view()),
     #path('api/v1/token/refresh/', TokenRefreshView.as_view())
 ]
