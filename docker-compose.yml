@@ -7,8 +7,8 @@ services:
       - s3storage-e2e-cloud-storage
     container_name: backend-e2e-cloud-storage
     environment:
-      - DJANGO_SUPERUSER_USERNAME=admin
-      - DJANGO_SUERPUSER_PASSWORD=20softsich20
+      - SUPERUSER_USERNAME=admin
+      - SUERPUSER_PASSWORD=20softsich20
     networks: 
       - e2e-cloud-storage-network
     ports: 
