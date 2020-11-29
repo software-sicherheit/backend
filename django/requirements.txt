@@ -5,3 +5,4 @@ environs
 djangorestframework
 djangorestframework-simplejwt
 minio
+psutil

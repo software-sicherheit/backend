@@ -93,18 +93,16 @@ class MinioManagement:
             response = self.client.get_object(self.bucket_name, path)
             object = self.client.list_objects(self.bucket_name, prefix=path, recursive=False)
 
-            jsondata = []
-            for x in object: # todo: how do i access subelements?
-                test = str(x.object_name).split('/')[1]
-                jsondata.append(
-                    {
-                        'id': uuid,
-                        'filename': str(x.object_name).split('/')[1],
-                        'contentType': str(x.content_type),
-                        'size': int(x.size),
-                        'lastModifiedDate': str(x.last_modified),
-                        'blob' : response.data.decode()
-                    })
+            x = object[0]
+
+            jsondata={
+                    'id': uuid,
+                    'filename': str(x.object_name).split('/')[1],
+                    'contentType': str(x.content_type),
+                    'size': int(x.size),
+                    'lastModifiedDate': str(x.last_modified),
+                    'blob' : response.data.decode()
+                }
 
             return jsondata
         except ResponseError as identifier:

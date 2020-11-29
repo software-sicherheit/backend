@@ -26,6 +26,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 # from . import backends
 from .utils import generate_access_token, generate_refresh_token
+import psutil
 
 mongoClient = mon.MongoManagement()
 minioClient = min.MinioManagement("accesskey", "secretkey")
@@ -186,6 +187,23 @@ def userDetail(request, id):
         minioClient.purge_user(int(id))  # Deletes all files of user
         user.delete()
         return HttpResponse("Dokument gelöscht")
+
+
+@api_view(['GET'])
+def statistic(request):
+
+    #dict.keys()
+
+    statistics= {
+            'cpuUsage': int( psutil.cpu_percent()),  # to be filled in views from jwt
+            'ramUsage': int( psutil.virtual_memory().percent ),
+            'diskUsage':int( psutil.disk_usage("/").percent ) ,
+            'swapUsage':int( psutil.swap_memory().percent ) ,
+            'inboundTraffic':int( psutil.net_io_counters().bytes_recv),
+            'outboundTraffic':int( psutil.net_io_counters().bytes_sent)
+        }
+    return HttpResponse( str(statistics) )
+
 
     # End Land #
 
