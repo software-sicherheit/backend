@@ -7,3 +7,4 @@ djangorestframework-simplejwt
 minio
 psutil
 django-jsonfield
+django-cors-headers
