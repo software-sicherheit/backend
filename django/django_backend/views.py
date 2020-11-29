@@ -133,7 +133,7 @@ def docList(request):
             buffer = io.BytesIO(bytes(jsondata['blob'], 'ascii'))
 
             minioClient.put_object( get_uuid_from_jwt(request), jsondata['filename'], buffer, int(jsondata['size']))
-            return Response(201)  # created
+            return Response(201)  # c reate d
         except:
             return Response(400) #Bad request cause of invalid syntax
 
