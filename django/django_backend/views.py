@@ -111,29 +111,28 @@ def apiOverview(request):
         }
     return Response(api_urls)
 
+def get_uuid_from_jwt(request):
+    authorization_header = request.headers.get('Authorization')
+    access_token = authorization_header.split(' ')[1]
+    payload = jwt.decode(
+        access_token, settings.SECRET_KEY, algorithms=['HS256'])
+    return str(payload['user_id']).zfill(4)
+
 # /api/v1/documents/
 @api_view(['GET','POST'])
 def docList(request):
     permission_classes = (IsAuthenticated,)
     if request.method == 'GET':
         try:
-            authorization_header = request.headers.get('Authorization')
-            access_token = authorization_header.split(' ')[1]
-            payload = jwt.decode(
-                access_token, settings.SECRET_KEY, algorithms=['HS256'])
-            uuid = payload['user_id']
-            # uuid = 11
-            uuid = str(uuid).zfill(4) # todo: get uuid from jwt token
-            return Response(minioClient.generate_object_list_json(uuid) )
+            return Response(minioClient.generate_object_list_json(get_uuid_from_jwt(request)) )
         except:
             return Response( HttpResponse(400) ) # Bad request
     elif request.method == 'POST': # Testwith: {"id":"0011","filename":"bananenbrotsalat","contentType":"file.type","size":"8","lastModifiedDate":"lastModifiedDate","blob":"blobdata"}
         try:
             jsondata = json.loads(request.body.decode('UTF-8'))
             buffer = io.BytesIO(bytes(jsondata['blob'], 'ascii'))
-            uuid = jsondata['id'] # todo: get uuid from jwt
-            uuid = str(uuid).zfill(4)
-            minioClient.put_object( str(uuid), jsondata['filename'], buffer, int(jsondata['size']))
+
+            minioClient.put_object( get_uuid_from_jwt(request), jsondata['filename'], buffer, int(jsondata['size']))
             return Response(201)  # created
         except:
             return Response(400) #Bad request cause of invalid syntax
@@ -144,18 +143,12 @@ def docDetail(request, id):
     permission_classes = (IsAuthenticated,)
     if request.method == 'GET':
         try:
-            print("ID:")
-            print(id)
-            uuid = 11 # todo: get from jwt token # Path is uudi/id
-            uuid = str(uuid).zfill(4) # todo: get uuid from jwt token
-            return Response( minioClient.get_file( str(uuid), str(id) ) )
+            return Response( minioClient.get_file( get_uuid_from_jwt(request), str(id) ) )
         except:
             return Response(400)
     elif request.method == 'DELETE':
         try:
-            uuid = "0011" # todo: get from jwt token
-            uuid = str(uuid).zfill(4)
-            minioClient.remove_file( str(uuid), str(id) )
+            minioClient.remove_file( get_uuid_from_jwt(request), str(id) )
             return Response(200)
         except:
             Response(400)
