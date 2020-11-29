@@ -9,6 +9,8 @@ https://docs.djangoproject.com/en/3.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.1/ref/settings/
 """
+import os
+from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -83,31 +85,26 @@ WSGI_APPLICATION = 'django_backend.wsgi.application'
 '''
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        "ENGINE": "djongo",
+        "HOST": "db-e2e-cloud-storage",
     }
-}
-DATABASES = {
-        'default': {
-            'ENGINE': 'djongo',
-            'NAME': 'user_data',
-
-            'HOST':'mongodb://user.pass@localhost:27017',
-            'USER':'user',
-            'PASSWORD':'pass',
-        },
 }
 '''
 
 DATABASES = {
-    'default': {
-        "ENGINE": "djongo",
-        "NAME": "mongodb",
-        "HOST": "mongodb://mongodb_user:20softsich20@localhost:27017/mongodb",
-        "USER": "mongodb_user",
-        "PASSWORD": "20softsich20",
-
-    }
+'default': {
+# 'ENGINE': 'django.db.backends.sqlite3',
+# 'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+'ENGINE': 'djongo',
+'ENFORCE_SCHEMA': True,
+'NAME': 'mongodb',
+'HOST': 'backend-e2e-cloud-storage:27017',
+'PORT': 27017,
+'USER': 'mongodb_user',
+'PASSWORD': '20softsich20',
+'AUTH_SOURCE': 'admin',
+'AUTH_MECHANISM': 'SCRAM-SHA-1',
+}
 }
 
 # Password validation

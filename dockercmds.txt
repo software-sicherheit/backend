@@ -1,2 +1,1 @@
-sudo docker run -it -p 8080:8080 backend
-sudo docker build -t backend . 
+sudo docker build --no-cache -t backend . && sudo docker-compose -f docker-compose.yml up

@@ -5,9 +5,11 @@ services:
     container_name: db-e2e-cloud-storage
     volumes: 
       - ./mongo-volume:/data/db
-        #environment: 
-        #- MONGO_INITDB_ROOT_USERNAME=mongodb_user
-        #- MONGO_INITDB_ROOT_PASSWORD=20softsich20
+      - ./init-db:/docker-entrypoint-initdb.d
+    environment: 
+      - MONGO_INITDB_ROOT_USERNAME=mongodb_user
+      - MONGO_INITDB_ROOT_PASSWORD=20softsich20
+      - MONGO_INITDB_DATABASE=mongodb
     networks: 
       - e2e-cloud-storage-network
     ports: 
@@ -16,12 +18,14 @@ services:
   backend-e2e-cloud-storage:
     #image: mongo:4.4.1
     build: .
-    depends_on: 
+    links:
+      - db-e2e-cloud-storage
+    depends_on:        
       - s3storage-e2e-cloud-storage
       - db-e2e-cloud-storage
     container_name: backend-e2e-cloud-storage
-    enviroment:
-      - DJANGO_SUPERUSER_USERNAME=admin
+    environment:
+      - DJANGO_SUPERUSER_USERNAME=mongodb_user
       - DJANGO_SUERPUSER_PASSWORD=20softsich20
     networks: 
       - e2e-cloud-storage-network
