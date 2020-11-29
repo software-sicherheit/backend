@@ -1,0 +1,2 @@
+Standalone Docker with minio and backend: bash compose.sh
+minio standalone, for runserver starts  : bash startOnlyMinio.sh
