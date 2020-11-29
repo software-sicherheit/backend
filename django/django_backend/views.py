@@ -24,31 +24,33 @@ from bson import ObjectId
 import jwt
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
-from . import backends
+# from . import backends
 from .utils import generate_access_token, generate_refresh_token
 
 mongoClient = mon.MongoManagement()
 minioClient = min.MinioManagement("accesskey", "secretkey")
 
+
 class RegisterView(generics.GenericAPIView):
     serializer_class = RegisterSerializer
     def post (self, request, *args, **kwargs): 
-        serializer = RegisterSerializer(data=request.data)
         response = Response()
-        if serializer.is_valid():
-            serializer.save()
-            username = request.data.get('username')
-            user = User.objects.filter(username=username).first()
-            serialized_user = UserSerializer(user).data
-            access_token = generate_access_token(user)
-            refresh_token = generate_refresh_token(user)
-            response.set_cookie(key='refreshtoken', value=refresh_token, httponly=True)
-            response.data = {
-                'access_token': access_token,
-                'user_id': serialized_user['id'],
-            }
-            return response
-        return Response(serializer.data, status = status.HTTP_400_BAD_REQUEST)
+        username = request.data.get('username')
+        password = request.data.get('password')
+        if (username is None) or (password is None):
+            return Response(status = status.HTTP_400_BAD_REQUEST)
+        user = User.objects.create_user(username=username, password=password)
+        user = User.objects.filter(username=username).first()
+        serialized_user = UserSerializer(user).data
+        access_token = generate_access_token(user)
+        refresh_token = generate_refresh_token(user)
+        response.set_cookie(key='refreshtoken', value=refresh_token, httponly=True)
+        response.data = {
+            'access_token': access_token,
+            'user_id': serialized_user['id'],
+        }
+        return response
+        # return Response(serializer.data, status = status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
 def login_view(request):
@@ -94,7 +96,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 
 class MyTokenObtainPairView(TokenObtainPairView):
-    serializer_class = MyTokenObtainPairSerializer 
+    serializer_class = MyTokenObtainPairSerializer     
 '''
 
 @api_view(['GET'])
@@ -186,17 +188,16 @@ def userDetail(request, id):
         user.delete()
         return HttpResponse("Dokument gelöscht")
 
-
     # End Land #
 
-    '''
-    doc_data = JSONParser().parse(request)
-    serializer = DocumentSerializer(data=doc_data)
-    if serializer.is_valid():
-        serializer.save()
-    return Response(serializer.data)
-    '''
-
+'''
+doc_data = JSONParser().parse(request)
+serializer = DocumentSerializer(data=doc_data)
+if serializer.is_valid():
+    serializer.save()
+return Response(serializer.data)
+'''
+'''
 #todo: try catching
 
 def response2json(http_response):
@@ -248,4 +249,4 @@ def edit_documents (request, document_id=None):
             pass
         elif request.method == 'DELETE':
             pass
-
+'''

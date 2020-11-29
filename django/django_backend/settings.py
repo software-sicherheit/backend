@@ -10,6 +10,9 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.1/ref/settings/
 """
 
+import os
+from pathlib import Path
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -40,11 +43,6 @@ INSTALLED_APPS = [
     'django_backend',
 ]
 
-REST_FRAMEWORK={
-    'DEFAULT_AUTHENTICATION_CLASSES':(
-        'django_backend.backends.JWTAuthentication'
-    )
-}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -80,13 +78,14 @@ WSGI_APPLICATION = 'django_backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 
-'''
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
+'''
+
 DATABASES = {
         'default': {
             'ENGINE': 'djongo',
@@ -97,7 +96,6 @@ DATABASES = {
             'PASSWORD':'pass',
         },
 }
-'''
 
 DATABASES = {
     'default': {
@@ -109,7 +107,7 @@ DATABASES = {
 
     }
 }
-
+'''
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
 
@@ -152,7 +150,7 @@ STATIC_URL = '/static/'
 REST_FRAMEWORK = {
     #'DEFAULT_PERMISSION_CLASSES' : ('rest_framework.permissions.IsAuthenticated',),
     # 'DEFAULT_AUTHENTICATION_CLASSES' : ('rest_framework_simplejwt.authentication.JWTAuthentication',)
-    'EFAULT_AUTHENTICATION_CLASSES' : 'django_backend.SafeJWTAuthentication'
+    'DEFAULT_AUTHENTICATION_CLASSES' : ('django_backend.backends.SafeJWTAuthentication',),
 }
 
 #JWT
