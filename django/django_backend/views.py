@@ -181,6 +181,7 @@ def userList(request):
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         return Response(status=status.HTTP_200_OK)
     elif request.method == 'DELETE':
+        minioClient.purge_user(int(uuid))
         user = User.objects.get(id=uuid)
         user.delete()
         return Response (status=status.HTTP_200_OK)
@@ -222,6 +223,11 @@ def userDelete(request, id):
         except Exception as e:
             resp ['MinioMeta'] = str(e)
         try:
+            minioClient.purge_user(int(id))  # ToDo: "unsupported operand type(s) for +: 'int' and 'str'"
+            resp ['MinioData'] = 'pass'
+        except Exception as e: 
+            resp ['MinioData'] = str(e)
+        try:
             user = User.objects.get(id=id)
             if user is None:
                 resp['User'] = 'No user found'
@@ -230,11 +236,6 @@ def userDelete(request, id):
                 resp ['User'] = 'pass'
         except Exception as e:
             resp ['User'] = str(e)
-        try:
-            minioClient.purge_user(int(id))  # ToDo: "unsupported operand type(s) for +: 'int' and 'str'"
-            resp = resp + {'MinioData':'pass'}
-        except Exception as e: 
-            resp ['MinioData'] = str(e)
         return HttpResponse(str(resp))
 
 # api/v1/statistics/overview/
