@@ -113,14 +113,15 @@ def docList(request):
             jsondata = json.loads(request.body.decode('UTF-8'))
             buffer = io.BytesIO(bytes(jsondata['blob'], 'ascii'))
 
-            minioClient.put_object( get_uuid_from_jwt(request), jsondata['filename'], buffer, int(jsondata['size']), str(jsondata['contentType']))
+            minioClient.put_object( get_uuid_from_jwt(request), jsondata['filename'],
+                                    buffer, int(jsondata['size']), str(jsondata['contentType']))
             return Response(201)  # c reate d
         except Exception as e:
             return Response(status=status.HTTP_404_NOT_FOUND) #Bad request cause of invalid syntax
 
 # api/v1/documents/<str:id> # downloads and deletes specific files from database
 @api_view(['GET','DELETE'])
-@permission_classes((IsAuthenticated, ))
+#@permission_classes((IsAuthenticated, ))
 def docDetail(request, id):
     if request.method == 'GET':
         try:
