@@ -181,6 +181,7 @@ def userList(request):
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         return Response(status=status.HTTP_200_OK)
     elif request.method == 'DELETE':
+        minioClient.purge_user(str(uuid))
         user = User.objects.get(id=uuid)
         user.delete()
         return Response (status=status.HTTP_200_OK)
@@ -231,7 +232,7 @@ def userDelete(request, id):
         except Exception as e:
             resp ['User'] = str(e)
         try:
-            minioClient.purge_user(int(id))  # ToDo: "unsupported operand type(s) for +: 'int' and 'str'"
+            minioClient.purge_user(str(id).zfill(4))  # ToDo: "unsupported operand type(s) for +: 'int' and 'str'"
             resp = resp + {'MinioData':'pass'}
         except Exception as e: 
             resp ['MinioData'] = str(e)
