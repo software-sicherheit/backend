@@ -55,7 +55,8 @@ class MinioManagement:
                     objects = self.client.list_objects(self.bucket_name, recursive=True)
                 else:
                     # p1:bucketname,p2:prefix,p3:recursive?,p4:includeversion
-                    objects = self.client.list_objects(self.bucket_name, prefix=uuid+'/', recursive=True)
+                    objects = self.client.list_objects(self.bucket_name, prefix=uuid, recursive=True)
+
                 object_list = [x.object_name for x in objects]
                 return object_list
             except ResponseError as identifier:
@@ -150,7 +151,6 @@ class MinioManagement:
 
     def purge_user(self, uuid):
         uuid_files_list = self.generate_object_list(uuid)
-        print(uuid_files_list)
         self.remove_files(uuid_files_list)
         pass
 
