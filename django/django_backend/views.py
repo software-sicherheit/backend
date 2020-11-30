@@ -213,7 +213,7 @@ def userDelete(request, id):
         return Response (status=status.HTTP_403_FORBIDDEN)
     if request.method == 'DELETE':
         resp = {}
-        try:
+        try:          
             miniometa = MinioMeta.objects.filter(uuid=id)
             if len(miniometa) == 0:
                 resp['MinioMeta'] = 'No entry found'
