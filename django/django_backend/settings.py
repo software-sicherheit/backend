@@ -27,13 +27,14 @@ REFRESH_TOKEN_SECRET = '#d%=)^ahx*!tr2l^&w!exds53(if3(jgq&kv6q0%@ysm)4p+#j'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['http://localhost:8080']
+ALLOWED_HOSTS = ['*']
 
-CORS_ORIGIN_ALLOW_ALL = False
+CORS_ORIGIN_ALLOW_ALL = True
+'''
 CORS_ORIGIN_WHITELIST = (
        'http://localhost:8080',
 )
-
+'''
 # Application definition
 
 INSTALLED_APPS = [
@@ -50,7 +51,7 @@ INSTALLED_APPS = [
 
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
+    # 'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -154,7 +155,7 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 REST_FRAMEWORK = {
-    #'DEFAULT_PERMISSION_CLASSES' : ('rest_framework.permissions.IsAuthenticated',),
+    # 'DEFAULT_PERMISSION_CLASSES' : ['rest_framework.permissions.IsAuthenticated','rest_framework.permissions.IsAdminUser','rest_framework.permissions.AllowAny',],
     # 'DEFAULT_AUTHENTICATION_CLASSES' : ('rest_framework_simplejwt.authentication.JWTAuthentication',)
     'DEFAULT_AUTHENTICATION_CLASSES' : ('django_backend.backends.SafeJWTAuthentication',),
 }
