@@ -58,6 +58,7 @@ class RegisterView(generics.GenericAPIView):
 
 @api_view(['POST'])
 def login_view(request):
+    # permission_classes = (IsAuthenticated,)
     User = get_user_model()
     username = request.data.get('username')
     password = request.data.get('password')
@@ -113,13 +114,13 @@ def docList(request):
             buffer = io.BytesIO(bytes(jsondata['blob'], 'ascii'))
 
             minioClient.put_object( get_uuid_from_jwt(request), jsondata['filename'], buffer, int(jsondata['size']))
-            return Response(201)  # c reate d
+            return Response(status=status.HTTP_201_CREATED)  # c reate d
         except Exception as e:
             return Response(status=status.HTTP_404_NOT_FOUND) #Bad request cause of invalid syntax
 
 # api/v1/documents/<str:id> # downloads and deletes specific files from database
 @api_view(['GET','DELETE'])
-@permission_classes((IsAuthenticated, ))
+# @permission_classes((IsAuthenticated, ))
 def docDetail(request, id):
     if request.method == 'GET':
         try:
@@ -144,9 +145,12 @@ def userList(request):
         minioMeta = MinioMeta.objects.all()
         if minioMeta is None:
             return Response(status=status.HTTP_404_NOT_FOUND)
-        serializer = MinioMetaSerializer(minioMeta, many=False)
-        serializer.data,     
-        return Response(status=status.HTTP_200_OK) 
+        serializer = MinioMetaSerializer(minioMeta, many=True)
+        #serializer.data,     
+        return Response(serializer.data, status=status.HTTP_200_OK) 
+        users = User.objects.all()
+        serializer = UserSerializer(users, many = True)
+        return Response(serializer.data)
     elif request.method == 'POST':
         uuid = get_uuid_from_jwt(request)
         passwordKey = request.data.get('passwordKey')
@@ -185,28 +189,36 @@ def userDelete(request, id):
     if request.method == 'DELETE':
         uuid = get_uuid_from_jwt(request)
         resp = {}
-        try:
+        try:          
             miniometa = MinioMeta.objects.filter(uuid=id)
-            miniometa.delete()
-            resp = resp + {'MinioMeta':'pass'}
+            if len(miniometa) == 0:
+                resp['MinioMeta'] = 'No entry found'
+            else:
+                x = miniometa.delete()
+                resp['MinioMeta'] = 'pass'
         except Exception as e:
-            resp = resp + {'MinioMeta':e}
-        try:
+            resp['MinioMeta'] = str(e)
+        try: 
             user = User.objects.get(id=id)
-            user.delete()
-            resp = resp + {'User':'pass'}
+            print(user)
+            if user is None:
+                resp['User'] = 'No entry found'
+            else:                
+                user.delete()
+                resp['User'] = 'pass'
         except Exception as e:
-            resp = resp + {'User':e}
+            resp['User'] = str(e)
         try:
-            minioClient.purge_user(int(id))  # Deletes all files of user
-            resp = resp + {'MinioData':'pass'}
-        except Exception as e: 
-            resp = resp + {'MinioData':e}
-        return HttpResponse(str(resp))
+            minioClient.purge_user(int(id))  # toDo: fehlermeldung unsupported operand type(s) for +: 'int' and 'str' @Benny
+            resp['MinioData'] = 'pass'
+        except Exception as e:
+            print (e)
+            resp['MinioData'] = str(e)
+        return Response(resp, status=status.HTTP_200_OK) 
 
 
 @api_view(['GET'])
-@staff_member_required
+# @staff_member_required
 def statistic(request):
 
     #dict.keys()
