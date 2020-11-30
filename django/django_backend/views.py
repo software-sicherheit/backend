@@ -198,7 +198,7 @@ def userDelete(request, id):
         except Exception as e:
             resp = resp + {'User':e}
         try:
-            minioClient.purge_user(int(id))  # Deletes all files of user
+            minioClient.purge_user(int(id))  # Deletes all files of given user
             resp = resp + {'MinioData':'pass'}
         except Exception as e: 
             resp = resp + {'MinioData':e}
@@ -208,9 +208,6 @@ def userDelete(request, id):
 @api_view(['GET'])
 @staff_member_required
 def statistic(request):
-
-    #dict.keys()
-
     statistics= {
             'cpuUsage': int( psutil.cpu_percent()),  # to be filled in views from jwt
             'ramUsage': int( psutil.virtual_memory().percent ),
