@@ -14,7 +14,7 @@ from rest_framework.parsers import JSONParser
 
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from .serializers import UserSerializer, RegisterSerializer, MinioMetaSerializer
 from django.contrib.auth import authenticate, login, get_user_model
 from django.contrib.auth.models import User
@@ -57,7 +57,8 @@ class RegisterView(generics.GenericAPIView):
         # return Response(serializer.data, status = status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
-def login_view(request):
+def login_view(request):    
+    #permission_classes = (AllowAny,)
     User = get_user_model()
     username = request.data.get('username')
     password = request.data.get('password')
@@ -182,6 +183,7 @@ def userAll(request):
 #@permission_required('is_superuser')
 @api_view(['DELETE'])
 def userDelete(request, id):
+    # permission_classes = (IsAdminUser,)
     if request.method == 'DELETE':
         uuid = get_uuid_from_jwt(request)
         resp = {}
