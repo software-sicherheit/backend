@@ -14,7 +14,7 @@ from rest_framework.parsers import JSONParser
 
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from .serializers import UserSerializer, RegisterSerializer, MinioMetaSerializer
 from django.contrib.auth import authenticate, login, get_user_model
 from django.contrib.auth.models import User
@@ -26,8 +26,9 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .utils import generate_access_token
 import psutil
-from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import permission_required
+from django.contrib.auth.decorators import user_passes_test
+from django.core import serializers
 
 mongoClient = mon.MongoManagement()
 minioClient = min.MinioManagement("accesskey", "secretkey")
@@ -57,8 +58,7 @@ class RegisterView(generics.GenericAPIView):
         # return Response(serializer.data, status = status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
-def login_view(request):
-    # permission_classes = (IsAuthenticated,)
+def login_view(request):    
     User = get_user_model()
     username = request.data.get('username')
     password = request.data.get('password')
@@ -81,7 +81,6 @@ def login_view(request):
     return Response(response.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
-# @permission_classes((IsAuthenticated, ))
 def apiOverview(request):
     api_urls = {
         # Without #numbers the dict confuses the 'key':'value' pairs cause of similar keys
@@ -101,8 +100,14 @@ def get_uuid_from_jwt(request):
 
 # /api/v1/documents/
 @api_view(['GET','POST'])
-# @permission_classes((IsAuthenticated, ))
 def docList(request):
+    try:
+        uuid = get_uuid_from_jwt(request)
+    except:
+        return Response(status=status.HTTP_403_FORBIDDEN)
+    user = User.objects.get(id=uuid)
+    if not user.is_authenticated:
+        return Response (status=status.HTTP_403_FORBIDDEN)
     if request.method == 'GET':
         try:
             return Response(minioClient.generate_object_list_json(get_uuid_from_jwt(request)))
@@ -113,15 +118,22 @@ def docList(request):
             jsondata = json.loads(request.body.decode('UTF-8'))
             buffer = io.BytesIO(bytes(jsondata['blob'], 'ascii'))
 
-            minioClient.put_object( get_uuid_from_jwt(request), jsondata['filename'], buffer, int(jsondata['size']))
-            return Response(status=status.HTTP_201_CREATED)  # c reate d
-        except Exception as e:
+            minioClient.put_object( get_uuid_from_jwt(request), jsondata['filename'],
+                                    buffer, int(jsondata['size']), str(jsondata['contentType']))
+            return Response(201)  # c reate d
+        except:
             return Response(status=status.HTTP_404_NOT_FOUND) #Bad request cause of invalid syntax
 
 # api/v1/documents/<str:id> # downloads and deletes specific files from database
 @api_view(['GET','DELETE'])
-# @permission_classes((IsAuthenticated, ))
 def docDetail(request, id):
+    try:
+        uuid = get_uuid_from_jwt(request)
+    except:
+        return Response(status=status.HTTP_403_FORBIDDEN)
+    user = User.objects.get(id=uuid)
+    if not user.is_authenticated:
+        return Response (status=status.HTTP_403_FORBIDDEN)
     if request.method == 'GET':
         try:
             return Response( minioClient.get_file( get_uuid_from_jwt(request), str(id) ) )
@@ -137,90 +149,105 @@ def docDetail(request, id):
 
 # api/v1/users/
 @api_view(['GET','POST', 'DELETE'])
-# @permission_classes((IsAuthenticated, ))
 def userList(request):
-    if request.method == 'GET':
+    try:
         uuid = get_uuid_from_jwt(request)
-        # minioMeta = MinioMeta.objects.filter(uuid=uuid)
-        minioMeta = MinioMeta.objects.all()
+    except:
+        return Response(status=status.HTTP_403_FORBIDDEN)
+    user = User.objects.get(id=uuid)
+    if not user.is_authenticated:
+        return Response (status=status.HTTP_403_FORBIDDEN)
+    
+    if request.method == 'GET':
+        minioMeta = MinioMeta.objects.filter(uuid=uuid)
+        # minioMeta = MinioMeta.objects.all()
         if minioMeta is None:
             return Response(status=status.HTTP_404_NOT_FOUND)
-        serializer = MinioMetaSerializer(minioMeta, many=True)
-        #serializer.data,     
-        return Response(serializer.data, status=status.HTTP_200_OK) 
-        users = User.objects.all()
-        serializer = UserSerializer(users, many = True)
-        return Response(serializer.data)
+        #serializer = MinioMetaSerializer.restore_object(minioMeta)
+        data = serializers.serialize('json',minioMeta)
+        data = data[63:-2]
+        data = json.loads(data)
+        return Response(data, status=status.HTTP_200_OK) 
+        
     elif request.method == 'POST':
-        uuid = get_uuid_from_jwt(request)
         passwordKey = request.data.get('passwordKey')
         oaep = request.data.get('rsaOAEP')
         pss = request.data.get('rsaPSS')
         dataNameKey = request.data.get('dataNameKey')      
         try:
-            minioMeta = MinioMeta(uuid=uuid, passwordKey=passwordKey, oaep=oaep, pss=pss, dataNameKey=dataNameKey)
+            minioMeta = MinioMeta(uuid=uuid, passwordKey=passwordKey, rsaOAEP=oaep, rsaPSS=pss, dataNameKey=dataNameKey)
             minioMeta.save()
         except:
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         return Response(status=status.HTTP_200_OK)
     elif request.method == 'DELETE':
-        uuid = get_uuid_from_jwt(request)
+        minioClient.purge_user(int(uuid))
         user = User.objects.get(id=uuid)
         user.delete()
-        ## Redirect
         return Response (status=status.HTTP_200_OK)
 
 # api/v1/admin/users/
-# @staff_member_required
 @api_view(['GET'])
-# @permission_required('is_superuser')
-# @staff_member_required
 def userAll(request):
+    try:
+        uuid = get_uuid_from_jwt(request)
+    except:
+        return Response(status=status.HTTP_403_FORBIDDEN)
+    user = User.objects.get(id=uuid)
+    if not user.is_superuser:
+        return Response (status=status.HTTP_403_FORBIDDEN)
     if request.method == 'GET':
         users = User.objects.all()
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 # api/v1/admin/users/<user_id>
-# @staff_member_required
-#@permission_required('is_superuser')
 @api_view(['DELETE'])
 def userDelete(request, id):
-    if request.method == 'DELETE':
+    try:
         uuid = get_uuid_from_jwt(request)
+    except:
+        return Response(status=status.HTTP_403_FORBIDDEN)
+    user = User.objects.get(id=uuid)
+    if not user.is_superuser and not request.user.is_authenticated:
+        return Response (status=status.HTTP_403_FORBIDDEN)
+    if request.method == 'DELETE':
         resp = {}
         try:          
             miniometa = MinioMeta.objects.filter(uuid=id)
             if len(miniometa) == 0:
                 resp['MinioMeta'] = 'No entry found'
             else:
-                x = miniometa.delete()
-                resp['MinioMeta'] = 'pass'
+                miniometa.delete()
+                resp ['MinioMeta'] = 'pass'
         except Exception as e:
-            resp['MinioMeta'] = str(e)
-        try: 
-            user = User.objects.get(id=id)
-            print(user)
-            if user is None:
-                resp['User'] = 'No entry found'
-            else:                
-                user.delete()
-                resp['User'] = 'pass'
-        except Exception as e:
-            resp['User'] = str(e)
+            resp ['MinioMeta'] = str(e)
         try:
-            minioClient.purge_user(int(id))  # toDo: fehlermeldung unsupported operand type(s) for +: 'int' and 'str' @Benny
-            resp['MinioData'] = 'pass'
+            minioClient.purge_user(int(id))  # ToDo: "unsupported operand type(s) for +: 'int' and 'str'"
+            resp ['MinioData'] = 'pass'
+        except Exception as e: 
+            resp ['MinioData'] = str(e)
+        try:
+            user = User.objects.get(id=id)
+            if user is None:
+                resp['User'] = 'No user found'
+            else:
+                user.delete()
+                resp ['User'] = 'pass'
         except Exception as e:
-            print (e)
-            resp['MinioData'] = str(e)
-        return Response(resp, status=status.HTTP_200_OK) 
+            resp ['User'] = str(e)
+        return HttpResponse(str(resp))
 
-
+# api/v1/statistics/overview/
 @api_view(['GET'])
-# @staff_member_required
 def statistic(request):
-
+    try:
+        uuid = get_uuid_from_jwt(request)
+    except:
+        return Response(status=status.HTTP_403_FORBIDDEN)
+    user = User.objects.get(id=uuid)
+    if not user.is_superuser:
+        return Response (status=status.HTTP_403_FORBIDDEN)
     #dict.keys()
 
     statistics= {

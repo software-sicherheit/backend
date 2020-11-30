@@ -1,8 +1,6 @@
 from minio import Minio
 from minio.error import ResponseError, BucketAlreadyExists
-import os
-from environs import Env
-import json
+import hashlib
 
 class MinioManagement:
 
@@ -13,8 +11,8 @@ class MinioManagement:
 
         try:
             self.client = Minio(
-                'localhost:9010',
-                # 's3storage-e2e-cloud-storage:9000',
+                's3storage-e2e-cloud-storage:9000',
+                #'localhost:9010',
                 access_key=access,
                 secret_key=secret,
                 secure=False
@@ -29,7 +27,7 @@ class MinioManagement:
 
     #   user_id=bucket_name=user_name(?), file_id=file_name->stored in MonogDB
     # The uuid is the beginning of the filename uuid/file
-    def put_object(self, uuid, file_name, blob, size_of_data):
+    def put_object(self, uuid, file_name, blob, size_of_data, con_type):
         if not self.client.bucket_exists(self.bucket_name):
             try:
                 self.client.make_bucket(self.bucket_name)
@@ -37,13 +35,12 @@ class MinioManagement:
                 raise
         try:
                 con_filename = str(uuid) + '/' + str(file_name)
-                print("Shouldgivethefilenamehere: ")
-                print(con_filename)
                 self.client.put_object(
-                    self.bucket_name,
-                    con_filename,
-                    blob,
-                    size_of_data
+                    bucket_name=self.bucket_name,
+                    object_name=con_filename,
+                    data=blob,
+                    length=size_of_data,
+                    content_type=con_type,
                 )
         except ResponseError as identifier:
             raise
@@ -75,35 +72,40 @@ class MinioManagement:
 
                 jsondata = []
                 for x in objects:
+                    response = self.client.get_object(self.bucket_name, x.object_name)  ### --- ###
                     jsondata.append(
                     {
                         'id':               uuid,                 # to be filled in views from jwt
-                        'filename':         str(x.object_name).split('/')[1],
+                        'filename':         str(x.object_name)[str(x.object_name).index('/')+1:],
                         'contentType':      str(x.content_type),
                         'size':             int(x.size),
                         'lastModifiedDate': str(x.last_modified),
+                        'blob': response.data.decode()                                  ### --- ###
                     })
                 return jsondata
             except ResponseError as identifier:
                 raise
+            finally:
+                response.close()
+                response.release_conn()
 
-# Get file returns an object in the form of an httpResponse
+    # Get file returns an object in the form of an httpResponse
     def get_file(self, uuid, file_name):
         try:
             path = uuid + "/" + file_name
             response = self.client.get_object(self.bucket_name, path)
             object = self.client.list_objects(self.bucket_name, prefix=path, recursive=False)
 
-            x = object[0]
-
-            jsondata={
-                    'id': uuid,
-                    'filename': str(x.object_name).split('/')[1],
-                    'contentType': str(x.content_type),
-                    'size': int(x.size),
-                    'lastModifiedDate': str(x.last_modified),
-                    'blob' : response.data.decode()
-                }
+            #x = object[0]
+            for x in object:
+                jsondata={
+                        'id': uuid,
+                        'filename': str(x.object_name)[str(x.object_name).index('/')+1:],
+                        'contentType': str(x.content_type),
+                        'size': int(x.size),
+                        'lastModifiedDate': str(x.last_modified),
+                        'blob' : response.data.decode()
+                    }
 
             return jsondata
         except ResponseError as identifier:
@@ -120,7 +122,7 @@ class MinioManagement:
             except ResponseError as identifier:
                 raise
 
-# Removes all objects given a list of strings and a bucket
+    # Removes all objects given a list of strings and a bucket
     def remove_files(self, object_list):
         if self.client.bucket_exists(self.bucket_name):
             try:
@@ -146,7 +148,6 @@ class MinioManagement:
                 raise
 
     def purge_user(self, uuid):
-        #uuid_files_list = []
         uuid_files_list = self.generate_object_list(uuid)
         print(uuid_files_list)
         self.remove_files(uuid_files_list)
