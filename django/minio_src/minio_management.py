@@ -2,6 +2,7 @@ from minio import Minio
 from minio.error import ResponseError, BucketAlreadyExists
 import sys
 import hashlib
+import os
 
 class MinioManagement:
 
@@ -14,8 +15,8 @@ class MinioManagement:
             self.client = Minio(
                 's3storage-e2e-cloud-storage:9000',
                 #'localhost:9010',
-                access_key=access,
-                secret_key=secret,
+                access_key=os.environ.get('MINIO_ACCESS_KEY'),
+                secret_key=os.environ.get('MINIO_SECRET_KEY'),
                 secure=False
             )
             print("Connected to Minio Server!")

@@ -2,14 +2,6 @@ from rest_framework import serializers
 from .models import MinioMeta
 from django.contrib.auth.models import User
 
-'''
-class DocumentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Document
-        # ('title','ersteller') -> ohneID
-        fields =  '__all__'
-'''
-
 class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User

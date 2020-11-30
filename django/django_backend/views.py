@@ -19,9 +19,7 @@ from .utils import generate_access_token
 import psutil
 from django.core import serializers
 
-#mongoClient = mon.MongoManagement() # test one day with mongodb
-minioClient = min.MinioManagement("accesskey", "secretkey")
-
+minioClient = min.MinioManagement(os.environ.get('MINIO_ACCESS_KEY'), os.environ.get('MINIO_SECRET_KEY'))
 
 class RegisterView(generics.GenericAPIView):
     serializer_class = RegisterSerializer
