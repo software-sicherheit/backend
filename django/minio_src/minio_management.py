@@ -28,7 +28,7 @@ class MinioManagement:
 
     #   user_id=bucket_name=user_name(?), file_id=file_name->stored in MonogDB
     # The uuid is the beginning of the filename uuid/file
-    def put_object(self, uuid, file_name, blob, size_of_data):
+    def put_object(self, uuid, file_name, blob, size_of_data, contentType):
         if not self.client.bucket_exists(self.bucket_name):
             try:
                 self.client.make_bucket(self.bucket_name)
@@ -36,12 +36,11 @@ class MinioManagement:
                 raise
         try:
                 con_filename = str(uuid) + '/' + str(file_name)
-                print("Shouldgivethefilenamehere: ")
-                print(con_filename)
                 self.client.put_object(
                     self.bucket_name,
                     con_filename,
                     blob,
+                    contentType,
                     size_of_data
                 )
         except ResponseError as identifier:
@@ -86,7 +85,7 @@ class MinioManagement:
             except ResponseError as identifier:
                 raise
 
-# Get file returns an object in the form of an httpResponse
+    # Get file returns an object in the form of an httpResponse
     def get_file(self, uuid, file_name):
         try:
             path = uuid + "/" + file_name
@@ -97,7 +96,7 @@ class MinioManagement:
 
             jsondata={
                     'id': uuid,
-                    'filename': str(x.object_name).split('/')[1],
+                    'filename': x.object_name[x.object_name.index('/'):],
                     'contentType': str(x.content_type),
                     'size': int(x.size),
                     'lastModifiedDate': str(x.last_modified),
@@ -119,7 +118,7 @@ class MinioManagement:
             except ResponseError as identifier:
                 raise
 
-# Removes all objects given a list of strings and a bucket
+    # Removes all objects given a list of strings and a bucket
     def remove_files(self, object_list):
         if self.client.bucket_exists(self.bucket_name):
             try:
@@ -145,7 +144,6 @@ class MinioManagement:
                 raise
 
     def purge_user(self, uuid):
-        #uuid_files_list = []
         uuid_files_list = self.generate_object_list(uuid)
         print(uuid_files_list)
         self.remove_files(uuid_files_list)
