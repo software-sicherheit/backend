@@ -12,6 +12,7 @@ class MinioManagement:
         try:
             self.client = Minio(
                 's3storage-e2e-cloud-storage:9000',
+                #'localhost:9010',
                 access_key=access,
                 secret_key=secret,
                 secure=False
