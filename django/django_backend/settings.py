@@ -25,7 +25,7 @@ SECRET_KEY = '#d%=)^ahx*!tr2l^&w!exds53(if3(jgq&kv6q0%@ysm)4p+#j'
 REFRESH_TOKEN_SECRET = '#d%=)^ahx*!tr2l^&w!exds53(if3(jgq&kv6q0%@ysm)4p+#j'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 

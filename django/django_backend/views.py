@@ -213,7 +213,7 @@ def userDelete(request, id):
         return Response (status=status.HTTP_403_FORBIDDEN)
     if request.method == 'DELETE':
         resp = {}
-        try:
+        try:          
             miniometa = MinioMeta.objects.filter(uuid=id)
             if len(miniometa) == 0:
                 resp['MinioMeta'] = 'No entry found'
@@ -222,6 +222,11 @@ def userDelete(request, id):
                 resp ['MinioMeta'] = 'pass'
         except Exception as e:
             resp ['MinioMeta'] = str(e)
+        try:
+            minioClient.purge_user(int(id))  # ToDo: "unsupported operand type(s) for +: 'int' and 'str'"
+            resp ['MinioData'] = 'pass'
+        except Exception as e: 
+            resp ['MinioData'] = str(e)
         try:
             user = User.objects.get(id=id)
             if user is None:
@@ -236,6 +241,7 @@ def userDelete(request, id):
             resp = resp + {'MinioData':'pass'}
         except Exception as e: 
             resp ['MinioData'] = str(e)
+
         return HttpResponse(str(resp))
 
 # api/v1/statistics/overview/
