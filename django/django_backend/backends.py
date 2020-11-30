@@ -29,6 +29,3 @@ class SafeJWTAuthentication(authentication.BaseAuthentication):
 
         if not user.is_active:
             raise exceptions.AuthenticationFailed('user is inactive')
-
-        # self.enforce_csrf(request)
-        # return (user, None)

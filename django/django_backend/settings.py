@@ -22,19 +22,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = '#d%=)^ahx*!tr2l^&w!exds53(if3(jgq&kv6q0%@ysm)4p+#j'
-REFRESH_TOKEN_SECRET = '#d%=)^ahx*!tr2l^&w!exds53(if3(jgq&kv6q0%@ysm)4p+#j'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
 CORS_ORIGIN_ALLOW_ALL = True
-'''
-CORS_ORIGIN_WHITELIST = (
-       'http://localhost:8080',
-)
-'''
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -55,7 +50,6 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    # 'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -91,30 +85,7 @@ DATABASES = {
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
-'''
 
-DATABASES = {
-        'default': {
-            'ENGINE': 'djongo',
-            'NAME': 'user_data',
-
-            'HOST':'mongodb://user.pass@localhost:27017',
-            'USER':'user',
-            'PASSWORD':'pass',
-        },
-}
-
-DATABASES = {
-    'default': {
-        "ENGINE": "djongo",
-        "NAME": "mongodb",
-        "HOST": "mongodb://mongodb_user:20softsich20@localhost:27017/mongodb",
-        "USER": "mongodb_user",
-        "PASSWORD": "20softsich20",
-
-    }
-}
-'''
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
 
@@ -155,9 +126,5 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 REST_FRAMEWORK = {
-    # 'DEFAULT_AUTHENTICATION_CLASSES' : ('rest_framework_simplejwt.authentication.JWTAuthentication',)
     'DEFAULT_AUTHENTICATION_CLASSES' : ('django_backend.backends.SafeJWTAuthentication',),
 }
-
-#JWT
-JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY')

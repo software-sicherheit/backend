@@ -19,8 +19,8 @@ services:
     container_name: s3storage-e2e-cloud-storage
     environment:
       - BUCKET_NAME=e2e-cloud-storage
-      - MINIO_ACCESS_KEY=accesskey
-      - MINIO_SECRET_KEY=secretkey
+      - MINIO_ACCESS_KEY=nPMyDYpIjHiOUBElKmSygzPhkVeSoDkVbDwKsDgYFixmBJJvNZfgkKloPifZloks
+      - MINIO_SECRET_KEY=famFaoBYopvMkvEiXtomhwVqIGwguUzdokHEjzpeEbUNEQjyWkENMkCPWWhFgqpr
     volumes:
       - s3-data-e2e-cloud-storage:/data
     entrypoint: sh
