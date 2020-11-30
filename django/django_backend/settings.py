@@ -51,7 +51,7 @@ INSTALLED_APPS = [
 
 
 MIDDLEWARE = [
-    # 'corsheaders.middleware.CorsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -155,7 +155,6 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 REST_FRAMEWORK = {
-    # 'DEFAULT_PERMISSION_CLASSES' : ['rest_framework.permissions.IsAuthenticated','rest_framework.permissions.IsAdminUser','rest_framework.permissions.AllowAny',],
     # 'DEFAULT_AUTHENTICATION_CLASSES' : ('rest_framework_simplejwt.authentication.JWTAuthentication',)
     'DEFAULT_AUTHENTICATION_CLASSES' : ('django_backend.backends.SafeJWTAuthentication',),
 }

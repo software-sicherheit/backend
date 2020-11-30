@@ -30,7 +30,4 @@ urlpatterns = [
     path('api/v1/admin/users/', views.userAll),
     path('api/v1/admin/users/<str:id>', views.userDelete),
     path('api/v1/statistics/overview/', views.statistic)
-    # path('api/v1/api-auth/', include('rest_framework.urls')),
-    #path('api/v1/token/', TokenObtainPairView.as_view()),
-    #path('api/v1/token/refresh/', TokenRefreshView.as_view())
 ]
