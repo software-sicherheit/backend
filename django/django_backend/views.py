@@ -5,32 +5,21 @@ import os
 import sys
 import json
 sys.path.append(os.getcwd())
-from database.management import mongo_management as mon
 from minio_src import minio_management as min
-
 from rest_framework import generics, permissions, mixins, status, exceptions
-from rest_framework.parsers import JSONParser 
-
-
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from .serializers import UserSerializer, RegisterSerializer, MinioMetaSerializer
 from django.contrib.auth import authenticate, login, get_user_model
 from django.contrib.auth.models import User
 from django.conf import settings
 from .models import MinioMeta
-from bson import ObjectId
 import jwt
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework_simplejwt.views import TokenObtainPairView
 from .utils import generate_access_token
 import psutil
-from django.contrib.auth.decorators import permission_required
-from django.contrib.auth.decorators import user_passes_test
 from django.core import serializers
 
-mongoClient = mon.MongoManagement()
+#mongoClient = mon.MongoManagement() # test one day with mongodb
 minioClient = min.MinioManagement("accesskey", "secretkey")
 
 
@@ -111,8 +100,11 @@ def docList(request):
     if request.method == 'GET':
         try:
             return Response(minioClient.generate_object_list_json(get_uuid_from_jwt(request)))
-        except:
-            return Response(status=status.HTTP_404_NOT_FOUND) # Bad request
+        except Exception as e:
+            if str(e) == "local variable 'response' referenced before assignment":
+                return Response( [{}], status=status.HTTP_200_OK )
+            else:
+                return Response(status=status.HTTP_404_NOT_FOUND) # Bad request
     elif request.method == 'POST': # Testwith: {"id":"0011","filename":"bananenbrotsalat","contentType":"file.type","size":"8","lastModifiedDate":"lastModifiedDate","blob":"blobdata"}
         try:
             jsondata = json.loads(request.body.decode('UTF-8'))
@@ -120,7 +112,7 @@ def docList(request):
 
             minioClient.put_object( get_uuid_from_jwt(request), jsondata['filename'],
                                     buffer, int(jsondata['size']), str(jsondata['contentType']))
-            return Response(201)  # c reate d
+            return Response(201)  #c r e a t e d
         except:
             return Response(status=status.HTTP_404_NOT_FOUND) #Bad request cause of invalid syntax
 
@@ -266,66 +258,4 @@ def statistic(request):
         }
     return HttpResponse( str(statistics) )
 
-
     # End Land #
-
-'''
-doc_data = JSONParser().parse(request)
-serializer = DocumentSerializer(data=doc_data)
-if serializer.is_valid():
-    serializer.save()
-return Response(serializer.data)
-'''
-'''
-#todo: try catching
-
-def response2json(http_response):
-    data = http_response.body.decode('UTF-8')
-    jsondata = json.loads(data)
-    return jsondata
-
-# Here: user_id == uuid
-def edit_users(request, user_id=None):
-
-    if request.method == 'GET':
-        if (user_id != None):
-            return HttpResponse( mongoClient.return_user( int(user_id)) ) # todo: austausch datenbakzugriff
-        else:
-            return HttpResponse( 200 )
-    elif request.method == 'POST':
-        mongoClient.add_user( response2json(request) )
-        return HttpResponse(200)
-    elif request.method == 'PUT':
-        pass
-    elif request.method == 'DELETE':
-        id = int(id)
-        mongoClient.delete_user(id)
-        minioClient.purge_user(int(user_id)) # Deletes all files of user aswell
-        return HttpResponse(200)
-
-# if needed: get UUID from jwt token! document_id is filename
-def edit_documents (request, document_id=None):
-        id = document_id
-        if request.method == 'GET':
-
-            # work in progress #
-            if (id != None ):
-                #id = int(id) # takes uuid and creates a list including all files that beginn with uuid/
-                print("Document get file: GET x/file or get list of files from user x: GET documents/x")
-                print(id)
-                print("Minio generate object list: ")
-                print(minioClient.generate_object_list(id))
-                return HttpResponse( minioClient.generate_object_list(id) )
-            else: #print(mongoClient.return_user(id)) #return user, get name,
-                return HttpResponse(200) #mongoClient.return_user(id))
-
-            data = request.body.decode('UTF-8')
-            jsondata = json.loads(data)
-            buffer = io.BytesIO( bytes( jsondata['blob'], 'ascii') )
-            minioClient.put_object(jsondata['id'], jsondata['filename'], buffer, int(jsondata['size']))
-            return HttpResponse(id)
-        elif request.method == 'PUT':
-            pass
-        elif request.method == 'DELETE':
-            pass
-'''

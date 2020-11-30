@@ -1,5 +1,6 @@
 from minio import Minio
 from minio.error import ResponseError, BucketAlreadyExists
+import sys
 import hashlib
 
 class MinioManagement:
