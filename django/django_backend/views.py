@@ -100,7 +100,7 @@ def docList(request):
             return Response(minioClient.generate_object_list_json(get_uuid_from_jwt(request)))
         except Exception as e:
             if str(e) == "local variable 'response' referenced before assignment":
-                return Response( [{}], status=status.HTTP_200_OK )
+                return Response( [], status=status.HTTP_200_OK )
             else:
                 return Response(status=status.HTTP_404_NOT_FOUND) # Bad request
     elif request.method == 'POST': # Testwith: {"id":"0011","filename":"bananenbrotsalat","contentType":"file.type","size":"8","lastModifiedDate":"lastModifiedDate","blob":"blobdata"}
