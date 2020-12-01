@@ -8,8 +8,7 @@ class MinioManagement:
 
     def __init__(self, access, secret):
 
-        # Read from .env?
-        self.bucket_name = "e2e-cloud-storage"
+        self.bucket_name = os.environ.get('BUCKET_NAME')
 
         try:
             self.client = Minio(
@@ -20,6 +19,7 @@ class MinioManagement:
                 secure=False
             )
             print("Connected to Minio Server!")
+
         except Exception as e:
             raise e
 

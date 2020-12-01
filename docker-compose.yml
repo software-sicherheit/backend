@@ -9,6 +9,9 @@ services:
     environment:
       - SUPERUSER_USERNAME=admin
       - SUERPUSER_PASSWORD=20softsich20
+      - BUCKET_NAME=e2e-cloud-storage
+      - MINIO_ACCESS_KEY=nPMyDYpIjHiOUBElKmSygzPhkVeSoDkVbDwKsDgYFixmBJJvNZfgkKloPifZloks
+      - MINIO_SECRET_KEY=famFaoBYopvMkvEiXtomhwVqIGwguUzdokHEjzpeEbUNEQjyWkENMkCPWWhFgqpr
     networks: 
       - e2e-cloud-storage-network
     ports: 
